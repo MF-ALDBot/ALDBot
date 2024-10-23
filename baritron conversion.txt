@@ -1,0 +1,14 @@
+
+40 mTorr = 271 mV = 537
+
+30 mTorr = 221 mV 221 mV = 437 plc units
+
+20 mTorr = 171 mV 171 mV = 337
+
+10 mTorr = 121 mV 121 mV = 237
+
+5 mTorr = 96 mV = 188
+
+2 mTorr = 81 mV = 156
+
+0 mTorr = 71 mV 67 mV = 151 (actual 0 = 129)
