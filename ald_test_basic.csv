@@ -14,6 +14,7 @@ AIS32-0.1.7.1,"AIS32_BNC1_Baritron_gauge",false,"0",,,,,,,,false,false,"0"
 AIS32-0.1.7.2,"AIS32_BNC2_I",false,"0",,,,,,,,false,false,"0"
 AIS32-0.1.7.3,"AIS32_BNC3_I",false,"0",,,,,,,,false,false,"0"
 AIS32-0.1.7.4,"AIS32_BNC4_I",false,"0",,,,,,,,false,false,"0"
+S32-000214,"ALD1_timeout_reached",false,"0",,,,,,,,false,false,"0"
 AOS32-0.1.6.5,"AOS32-0.1.6.5",false,"0",,,,,,,,false,false,"0"
 AOS32-0.1.6.6,"AOS32-0.1.6.6",false,"0",,,,,,,,false,false,"0"
 AOS32-0.1.6.7,"AOS32-0.1.6.7",false,"0",,,,,,,,false,false,"0"
@@ -26,8 +27,8 @@ SWR-001514,"Array range error rung location",false,"0",,,,,,,"Rung Number in whi
 SWR-001513,"Array range error task location",false,"0",,,,,,,"Task Number in which ""Array out of range error"" occurred",,,
 SWR-001506,"Avg Logic Scan Time [x100=usec]",false,"0",,,,,,,"average logic scan time",,,
 SWR-001503,"Avg Scan Interval [x100=usec]",false,"0",,,,,,,"average overall scan time",,,
-F32-000018,"BNC1_baritron_gauge_mTorr",false,"0.0",400041,400042,,,,,,false,false,"0.0"
-S32-000027,"BNC1_baritron_gauge_mV",false,"0",400023,400024,,,,,,false,false,"0"
+F32-000019,"BNC1_baritron_gauge_mTorr",false,"0.0",400041,400042,,,,,,false,false,"0.0"
+S32-000210,"BNC1_baritron_gauge_mV",false,"0",400023,400024,,,,,,false,false,"0"
 S32-000028,"BNC2_mV",false,"0",400025,400026,,,,,,false,false,"0"
 S32-000029,"BNC3_mV",false,"0",400027,400028,,,,,,false,false,"0"
 S32-000030,"BNC4_mV",false,"0",400029,400030,,,,,,false,false,"0"
@@ -183,6 +184,7 @@ SBR-001003,"First Scan Bit",false,"0",,,,,,,"On during first scan in Run or Debu
 SWR-001530,"First Scan Interval [x100=usec]",false,"0",,,,,,,"Holds the value of the First Scan time",,,
 SBR-001007,"Forces Enabled",false,"0",,,,,,,"On if any forces are enabled",,,
 F32-000017,"HeaterSetPoint",false,"30",,,,,,,,false,false,"0.0"
+C-000083,"High_pressure_error",false,"0",000011,000011,,,,,,false,false,"0"
 SBR-001015,"I/O Configuration Error",false,"0",,,,,,,"On if actual I/O configuration and project I/O configuration do not match",,,
 SBR-001014,"I/O Error",false,"0",,,,,,,"On for any module error (such as a blown fuse)",,,
 SWRW-001758,"Identify Module Base Number",false,"0",,,,,,,"base number of module to be identified (See ""Requested Module Name"" tag)",,,
@@ -198,18 +200,24 @@ F32-000001,"MFC1SP",false,"0.0",,,,,,,,false,false,"0.0"
 AIS32-0.1.5.1,"MFC1_H2_PV",false,"0",,,,,,,,false,false,"0"
 S32-000017,"MFC1_H2_PV_sccm",false,"0",400005,400006,,,,,,false,false,"0"
 AOS32-0.1.6.1,"MFC1_H2_SP",false,"0",,,,,,,,false,false,"0"
+S32-000217,"MFC1_H2_SP_before_lim",false,"0",,,,,,,,false,false,"0"
 S32-000021,"MFC1_H2_SP_sccm",false,"0",400007,400008,,,,,,false,false,"0"
 AIS32-0.1.5.2,"MFC2_N2_plasma_PV",false,"0",,,,,,,,false,false,"0"
 S32-000018,"MFC2_N2_plasma_PV_sccm",false,"0",400011,400012,,,,,,false,false,"0"
 AOS32-0.1.6.2,"MFC2_N2_plasma_SP",false,"0",,,,,,,,false,false,"0"
+S32-000211,"MFC2_N2_plasma_SP_before_lim",false,"0",,,,,,,,false,false,"0"
 S32-000022,"MFC2_N2_plasma_SP_sccm",false,"0",400017,400018,,,,,,false,false,"0"
+S32-000212,"MFC2_high_lim",false,"0",,,,,,,,false,false,"0"
+S32-000213,"MFC2_low_lim",false,"0",,,,,,,,false,false,"0"
 AIS32-0.1.5.3,"MFC3_Ar_PV",false,"0",,,,,,,,false,false,"0"
 AOS32-0.1.6.3,"MFC3_Ar_SP",false,"0",,,,,,,,false,false,"0"
+S32-000218,"MFC3_Ar_SP_before_lim",false,"0",,,,,,,,false,false,"0"
 S32-000019,"MFC3_Ar_plasma_PV_sccm",false,"0",400013,400014,,,,,,false,false,"0"
 S32-000023,"MFC3_Ar_plasma_SP_sccm",false,"0",400019,400020,,,,,,false,false,"0"
 AIS32-0.1.5.4,"MFC4_ALD_purge_PV",false,"0",,,,,,,,false,false,"0"
 S32-000020,"MFC4_ALD_purge_PV_sccm",false,"0",400015,400016,,,,,,false,false,"0"
 AOS32-0.1.6.4,"MFC4_ALD_purge_SP",false,"0",,,,,,,,false,false,"0"
+S32-000219,"MFC4_ALD_purge_SP_before_lim",false,"0",,,,,,,,false,false,"0"
 S32-000024,"MFC4_ALD_purge_SP_sccm",false,"0",400021,400022,,,,,,false,false,"0"
 MST-0.0.0.1,"MST-0.0.0.1",false,"0",,,,,,,"RS232 Heartbeat Timeout Bit",false,false,"0"
 MST-0.0.0.2,"MST-0.0.0.2",false,"0",,,,,,,"RS232 Port Buffer Full Bit (95% Full)",false,false,"0"
@@ -387,10 +395,12 @@ SWR-001505,"Peak Logic Scan Time [x100=usec]",false,"0",,,,,,,"longest logic sca
 SWR-001502,"Peak Scan Interval [x100=usec]",false,"0",,,,,,,"longest overall scan time",,,
 SBRW-001006,"Portable Memory Device Eject",false,"0",,,,,,,"Users set to 1(ON) and the system reset to 0 as eject is completed",,,
 SBR-000001,"Portable Memory Device Ready",false,"0",,,,,,,"PMD is installed and ready to use",,,
+S32-000215,"Pressure_high",false,"0",,,,,,,,false,false,"0"
 SWR-001512,"Program Memory Size",false,"0",,,,,,,"current percentage of CPU memory used by the project",,,
 SBRW-001003,"Refresh Critical Error Log",false,"0",,,,,,,"set On to refresh the ""Critical Error Log""",,,
 SBRW-001004,"Refresh Non-Critical Error Log",false,"0",,,,,,,"set On to refresh the ""Noncritical Error Log""",,,
 SSTR-000103,"Requested Module Name",false,,,,50,,,,"name of specified module (see ""Identify Module Request bit"")",,,
+S32-000216,"ScopeFoundry_high_pressure_alert",false,"0",400043,400044,,,,,,false,false,"0"
 SBR-001010,"Switch in Run Bit",false,"0",,,,,,,"On if CPU Switch is up (Run)",,,
 SBR-001011,"Switch in Stop Bit",false,"0",,,,,,,"On if CPU Switch is down (Stop)",,,
 SWR-001507,"Total Scan Count1",false,"0",,,,,,,"total number of scans since entering Run mode (S32 low word)",,,
@@ -406,17 +416,18 @@ C-000020,"Valve8_window_purge_open",false,"0",000009,000009,,,,,,false,false,"0"
 SBR-001016,"Watchdog Timeout",false,"0",,,,,,,"On if the actual scan time has exceeded the limit set in the project",,,
 C-000081,"pid_auto",false,"1",,,,,,,,false,false,"0"
 C-000080,"pid_enable",false,"1",,,,,,,,false,false,"0"
+C-000084,"reset_alarm",false,"0",000012,000012,,,,,,false,false,"0"
 C-000013,"start_ALD_Valve1_dose",false,"0",000003,000003,,,,,,false,false,"0"
 C-000028,"start_delay",false,"0",,,,,,,,false,false,"0"
 S32-000016,"t1.Current",false,"0",400003,400004,,,,,,false,false,"0"
 C-000010,"t1.Done",false,"0",000001,000001,,,,,,false,false,"0"
-S32-000015,"t1.Preset",true,"500",400001,400002,,,,,,false,false,"0"
+S32-000015,"t1.Preset",true,"10",400001,400002,,,,,,false,false,"0"
 S32-000026,"t2.Current",false,"0",400033,400034,,,,,,false,false,"0"
 C-000012,"t2.Done",false,"0",000010,000010,,,,,,false,false,"0"
-S32-000025,"t2.Preset",true,"2000",400009,400010,,,,,,false,false,"0"
+S32-000025,"t2.Preset",true,"5000",400009,400010,,,,,,false,false,"0"
 S32-000032,"t3.Current",false,"0",,,,,,,,false,false,"0"
 C-000015,"t3.Done",false,"0",,,,,,,,false,false,"0"
 S32-000031,"t3.Preset",true,"800",400031,400032,,,,,,false,false,"0"
 S32-000034,"t_delay.Current",false,"0",400037,400038,,,,,,false,false,"0"
 C-000027,"t_delay.Done",false,"0",,,,,,,,false,false,"0"
-S32-000033,"t_delay.Preset",true,"2000",400035,400036,,,,,,false,false,"0"
+S32-000033,"t_delay.Preset",true,"10",400035,400036,,,,,,false,false,"0"

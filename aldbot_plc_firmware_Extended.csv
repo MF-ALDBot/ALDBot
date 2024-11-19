@@ -202,7 +202,10 @@ S32-000021,"MFC1_H2_SP_sccm",false,"0",400007,400008,,,,,,false,false,"0",false,
 AIS32-0.1.5.2,"MFC2_N2_plasma_PV",false,"0",,,,,,,,false,false,"0",false,"AIS32-0.1.5.2","AIS32",,false
 S32-000018,"MFC2_N2_plasma_PV_sccm",false,"0",400011,400012,,,,,,false,false,"0",false,,"S32",,false
 AOS32-0.1.6.2,"MFC2_N2_plasma_SP",false,"0",,,,,,,,false,false,"0",false,"AOS32-0.1.6.2","AOS32",,false
+S32-000211,"MFC2_N2_plasma_SP_before_lim",false,"0",,,,,,,,false,false,"0",false,,"S32",,false
 S32-000022,"MFC2_N2_plasma_SP_sccm",false,"0",400017,400018,,,,,,false,false,"0",false,,"S32",,false
+S32-000212,"MFC2_high_lim",false,"0",,,,,,,,false,false,"0",false,,"S32",,false
+S32-000213,"MFC2_low_lim",false,"0",,,,,,,,false,false,"0",false,,"S32",,false
 AIS32-0.1.5.3,"MFC3_Ar_PV",false,"0",,,,,,,,false,false,"0",false,"AIS32-0.1.5.3","AIS32",,false
 AOS32-0.1.6.3,"MFC3_Ar_SP",false,"0",,,,,,,,false,false,"0",false,"AOS32-0.1.6.3","AOS32",,false
 S32-000019,"MFC3_Ar_plasma_PV_sccm",false,"0",400013,400014,,,,,,false,false,"0",false,,"S32",,false

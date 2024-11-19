@@ -1,5 +1,8 @@
 from ScopeFoundry import Measurement
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
+import pyqtgraph as pg
+from pyqtgraph import mkPen
+from _datetime import datetime
 import time
 
 
@@ -13,7 +16,7 @@ class AldRunMeasure2(Measurement):
         self.settings.New('process_pressure', dtype = int, unit  = 'mTorr', initial = 30, vmin = 0, vmax = 1500)
         self.settings.New('plasma_pressure', dtype = int, unit = 'mTorr', initial = 30, vmin = 0, vmax = 1500)
         self.settings.New('plasma_duration', dtype = int, unit = 'ms', initial = 1500)
-        self.settings.New('precursor_dose_time', dtype = int, unit = 'ms', initial = 10, vmin = 0, vmax = 100)
+        self.settings.New('precursor_dose_time', dtype = int, unit = 'ms', initial = 10, vmin = 0, vmax = 250)
         self.settings.New('ald_valves_delay', dtype = int, unit = 'ms', initial = 10)
         self.settings.New('precursor_purge_time', dtype = int, unit = 'ms', initial = 1000)
         self.settings.New('H2_plasma_flow_rate', dtype = int, unit = 'sccm', initial = 0, vmin = 0, vmax = 100)
@@ -23,18 +26,23 @@ class AldRunMeasure2(Measurement):
         self.settings.New('ALD_purge_flow_rate', dtype = int, unit = 'sccm', initial = 0, vmin = 0, vmax = 100)
         self.settings.New('RF_power_setpoint', dtype=int, unit='Watt', initial = 100, vmin = 0, vmax = 300)
         
+        self.settings.New('LC_preset', dtype=int, unit='%', initial = 40, vmin = 0, vmax = 100)
+        self.settings.New('TC_preset', dtype=int, unit='%', initial = 40, vmin = 0, vmax = 100)
+        
         self.settings.New('ALD_prep_time', dtype = int, unit='ms', initial = 1000)
         self.settings.New('ALD_purge_time', dtype = int, unit='ms', initial = 1000)
         self.settings.New('plasma_prep_time', dtype = int, unit='ms', initial = 1000)
         self.settings.New('plasma_purge_time', dtype = int, unit='ms', initial = 1000)
         
         self.settings.New('Number_of_ALD_cycles', dtype = int, vmin=1, initial = 10)
+        self.settings.New('Sample_name', dtype=str, initial = 'ald_test_measurement')
         
         self.maxigauge = self.app.hardware['Pfeiffer_MaxiGauge']
         self.vat = self.app.hardware['VAT_Valve']
         self.plc = self.app.hardware['productivity_plc']
         self.seren_ps = self.app.hardware['Seren_Power_Supply']
         self.seren_mc2 = self.app.hardware['Seren_Match_Box']
+        self.filmsense = self.app.hardware['filmsense_ellipsometer']
         
     def setup_figure(self):
         
@@ -96,8 +104,17 @@ class AldRunMeasure2(Measurement):
         self.settings.plasma_purge_time.connect_to_widget(
             ui.plasma_purge_time_doubleSpinBox)
         
+        self.settings.LC_preset.connect_to_widget(
+            ui.lc_preset_doubleSpinBox)
+        
+        self.settings.TC_preset.connect_to_widget(
+            ui.tc_preset_doubleSpinBox)
+        
         self.settings.Number_of_ALD_cycles.connect_to_widget(
             ui.ald_cycles_doubleSpinBox)
+        
+        self.settings.Sample_name.connect_to_widget(
+            ui.sample_name_lineEdit)
         
         self.vat.settings.connected.connect_to_widget(
             ui.vat_valve_connect_checkBox)
@@ -138,6 +155,19 @@ class AldRunMeasure2(Measurement):
         
         self.plc.settings.AIF32_substrate_temp.connect_to_widget(
             ui.current_temp_read_label)
+        
+        self.plot = pg.PlotWidget()
+        self.ui.ellipsometry_graph_groupBox.layout().addWidget(self.plot)
+        self.plotline = self.plot.plot()
+        self.plot.setTitle("Ellipsometry Graph", color='k', size = '14pt')
+        self.plot.setBackground('w')
+        self.plot.getAxis('left').setPen('k')
+        self.plot.getAxis('bottom').setPen('k')
+        self.plotline.setPen(mkPen(color='r', width=2))
+        labelStyle = {'color': '#000', 'font-size': '12pt'}
+        self.plot.setLabel('bottom', 'Cycle number', **labelStyle)
+        self.plot.setLabel('left', 'Thickness (nm)', **labelStyle)
+        
                 
     def start_process(self):
         self.start()
@@ -239,7 +269,7 @@ class AldRunMeasure2(Measurement):
             self.vat.settings.target_pressure.write_to_hardware()
             t0 = time.monotonic()
             tolerance = 8
-            time.sleep(1)
+            time.sleep(3)
             while True:
                 current_pressure = self.vat.settings.actual_pressure.read_from_hardware()
                 
@@ -280,7 +310,6 @@ class AldRunMeasure2(Measurement):
             plasma_tc_position = self.seren_mc2.settings.TC_position.read_from_hardware()
             self.seren_ps.settings['RF_enable'] = False
             
-            self.status = "Moving to the ALD loop..."
             
             if self.interrupt_measurement_called:
                 return
@@ -303,17 +332,29 @@ class AldRunMeasure2(Measurement):
             current_temp = self.plc.settings['AIF32_substrate_temp']
             setpoint_temp = self.plc.settings['PID_SetPoint']
             if not ((current_temp - tolerance) <  setpoint_temp < (current_temp + tolerance)):
-                raise ValueError('Substrate temperature is far from setpoint', setpoint_temp, current_temp) 
-                                                     
-            #Open the ALD purge flow
-            self.plc.settings['Valve7_ald_pneumatic_purge_open'] = True
-            self.plc.settings['MFC4_ALD_purge_SP_sccm'] = S['ALD_purge_flow_rate']
+                raise ValueError('Substrate temperature is far from setpoint', setpoint_temp, current_temp)
+            
+            # Start the ellipsometry
+            self.status = "Collecting Ellipsometry Data for the Substrate..."
+            #self.filmsense.start_dynamic_measurement_pause()
+            folder_name = datetime.now().strftime("%Y_%m_%d")
+            folder_name = folder_name + f"_{self.settings.Sample_name.val}"
+            self.filmsense.single_measurement_collect()
+            filename = self.settings.Sample_name.val
+            filename = filename + '_substrate'
+            self.filmsense.save_single_measurement(folder_name, filename)
+            self.thickness_data = []
+            self.cycles = []
+            
+            self.status = "Moving to the ALD loop..." 
+
             
             #The ALD Loop
             print('Starting the ALD loop...')
             for i in range(S['Number_of_ALD_cycles']):
-                print("ALD Cycle", i+1, 'of', S['Number_of_ALD_cycles'])
-                self.status = f"ALD cycle {i+1} out of {S['Number_of_ALD_cycles']}"
+                cycle_number = i+1
+                print("ALD Cycle", cycle_number, 'of', S['Number_of_ALD_cycles'])          
+                self.status = f"ALD cycle {cycle_number} out of {S['Number_of_ALD_cycles']}"
                 
                 if self.interrupt_measurement_called:
                     break
@@ -325,14 +366,22 @@ class AldRunMeasure2(Measurement):
                 self.plc.settings['Valve8_window_purge_open'] = True
                 """
                 ## MO Prep Phase
+                #Open the ALD purge flow
+                self.plc.settings['MFC4_ALD_purge_SP_sccm'] = S['ALD_purge_flow_rate']
+                self.plc.settings['Valve2_ALD_purge_open'] = True
+                self.plc.settings['Valve7_ald_pneumatic_purge_open'] = True    
+                
                 #Open flow, set the position of the VAT valve
                 self.plc.settings['MFC3_Ar_plasma_SP_sccm'] = self.settings['Ar_process_flow_rate']
-                self.vat.settings.target_position.update_value(process_vat_position)
-                self.vat.settings.target_position.write_to_hardware()
+                #self.vat.settings.target_position.update_value(process_vat_position)
+                #self.vat.settings.target_position.write_to_hardware()
+                self.vat.settings.target_pressure.update_value(S['process_pressure'], update_hardware=True)
+                self.vat.settings.target_pressure.write_to_hardware()   
                 
                 #Time to stabilize/prep
                 ald_prep_time_s = S['ALD_prep_time']/1000
                 time.sleep(ald_prep_time_s)
+                self.plc.settings['Valve2_ALD_purge_open'] = False
                 
                 ## MO Dose phase
                 #ALD Valves Sequence
@@ -349,16 +398,21 @@ class AldRunMeasure2(Measurement):
                 
                 ## MO Purge Phase                
                 #Time to purge
+                self.plc.settings['Valve2_ALD_purge_open'] = True
                 ald_purge_time_s = S['ALD_purge_time']/1000
                 time.sleep(ald_purge_time_s)
+                self.plc.settings['Valve7_ald_pneumatic_purge_open'] = False 
+                self.plc.settings['MFC4_ALD_purge_SP_sccm'] = 0
+                self.plc.settings['Valve2_ALD_purge_open'] = False
+                
                 
                 ## Plasma Prep Phase
                 
                 #Set plasma VAT position
                 self.vat.settings.target_position.update_value(plasma_vat_position)
                 self.vat.settings.target_position.write_to_hardware()
-                self.seren_mc2.settings['set_lc_preset_position'] = 40 #plasma_lc_position
-                self.seren_mc2.settings['set_tc_preset_position'] = 36 #plasma_tc_position
+                self.seren_mc2.settings['set_lc_preset_position'] = self.settings['LC_preset']  #plasma_lc_position
+                self.seren_mc2.settings['set_tc_preset_position'] = self.settings['TC_preset'] #plasma_tc_position
                 self.seren_mc2.goto()
                 
                 #Close window purge
@@ -427,6 +481,19 @@ class AldRunMeasure2(Measurement):
                 plasma_purge_time_s = S['plasma_purge_time']/1000
                 time.sleep(plasma_purge_time_s)
                 
+                #Collect Ellipsometric Data
+                self.status = 'Collecting Ellipsometric data...'
+                self.filmsense.single_measurement_collect()
+                params = self.filmsense.get_params()
+                thickness_value = round(params["Thick(nm).1"],2)
+                self.thickness_data.append(thickness_value)
+                self.cycles.append(cycle_number)
+                filename = self.settings.Sample_name.val
+                filename = filename + f"_cycle_{cycle_number}"
+                self.filmsense.save_single_measurement(folder_name, filename)
+                #thickness_value_str = f'{thickness_value}'
+                
+                
                 # Close Plasma gases  
                 self.plc.settings['Valve4_plasma_process_gas_open'] = False # MFC1 pre-valve close
                 self.plc.settings['MFC1_H2_SP_sccm'] = 0
@@ -466,9 +533,10 @@ class AldRunMeasure2(Measurement):
             self.vat.settings.target_position.update_value(100)
             self.vat.settings.target_position.write_to_hardware()
             self.status = 'System is purging to base pressure'
+            
             #Purge all the lines
             t0 = time.monotonic()
-            while (time.monotonic() - t0) < 100:
+            while (time.monotonic() - t0) < 120:
                 if self.interrupt_measurement_called:
                     break
                 time.sleep(1)            
@@ -499,6 +567,11 @@ class AldRunMeasure2(Measurement):
             # Fully open Throttle Valve (VAT)
             self.vat.settings.target_position.update_value(100)
             self.vat.settings.target_position.write_to_hardware()
+            
+            #Stop the ellipsometry and save the data
+            #self.filmsense.stop_dynamic_measurement()
+            #self.filmsense.save_dynam_meas()
+            
             self.status = 'System is in the safe state. The process is finished.'
             
     def set_process_pressure(self, target_pressure, timeout, tolerance=2., interval=0.100, stabilization_time = 5):    
@@ -507,6 +580,9 @@ class AldRunMeasure2(Measurement):
         self.vat.settings.target_pressure.update_value(target_pressure, update_hardware=True)
         self.vat.settings.target_pressure.write_to_hardware()
         self.plc.settings['MFC3_Ar_plasma_SP_sccm'] = self.settings['Ar_process_flow_rate']
+        self.plc.settings['Valve7_ald_pneumatic_purge_open'] = True
+        self.plc.settings['MFC4_ALD_purge_SP_sccm'] = self.settings['ALD_purge_flow_rate']
+        self.plc.settings['Valve2_ALD_purge_open'] = True
         
         t0 = time.monotonic()
         
@@ -535,11 +611,14 @@ class AldRunMeasure2(Measurement):
             time.sleep(interval)
             
         print(f"Process pressure stable for {stabilization_time} seconds. Proceeding...")
+        self.plc.settings['Valve7_ald_pneumatic_purge_open'] = False
+        self.plc.settings['MFC4_ALD_purge_SP_sccm'] = 0
+        self.plc.settings['Valve2_ALD_purge_open'] = False
         return True
     
     def perform_safety_checks(self):
         
-        if self.maxigauge.settings.ch1_pressure_scaled.value > 10.0:
+        if self.maxigauge.settings.ch1_pressure_scaled.value > 5.0:
             self.plc.settings['ScopeFoundry_high_pressure_alert'] = 1 # Trigger PLC safe mode
             raise ValueError('Error! Pressure is too high! Closing all valves...')
 
@@ -553,6 +632,9 @@ class AldRunMeasure2(Measurement):
         
         self.ui.status_label.setText(self.status)
         #print("status:", self.status)
+        
+        if hasattr(self, 'thickness_data'):
+            self.plotline.setData(self.cycles, self.thickness_data)
         
             
                 
