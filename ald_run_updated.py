@@ -1,8 +1,11 @@
 from ScopeFoundry import Measurement
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
+from ScopeFoundry import h5_io
+import numpy as np
 import pyqtgraph as pg
 from pyqtgraph import mkPen
 from _datetime import datetime
+import os
 import time
 
 
@@ -174,14 +177,44 @@ class AldRunMeasure2(Measurement):
     
     def interrupt_process(self):
         self.interrupt()    
-        
-    
+                
     
     def run(self):
         
         S = self.settings
         
-        self.status = "Starting..."
+        #Create an H5 file to log all the settings
+        # Generate a timestamped folder name
+        folder_name = datetime.now().strftime("%Y_%m_%d_time_%H_%M_%S")
+        folder_name = folder_name + f"_{self.settings.Sample_name.val}"
+        folder_path = f"C:\\Users\\lab\\Documents\\ALDBot Data\\{folder_name}"
+        self.app.settings['save_dir'] = folder_path
+        self.h5_file = h5_io.h5_base_file(self.app, measurement=self)
+        self.h5_filename = self.h5_file.filename
+        self.t0 = time.time()
+        self.h5_file.attrs['time_id'] = self.t0
+        Hm = self.h5_meas_group  =  h5_io.h5_create_measurement_group(self, self.h5_file)
+        self.run_id = self.h5_file.attrs['unique_id']
+        
+        Hm['cycle_start_time'] = np.zeros(S['Number_of_ALD_cycles'], dtype=np.float64)
+        
+        # H5 spectroscopy
+        wls = self.app.hardware['ocean_optics_spec'].wavelengths
+        Hm['oes_spec_wls'] = wls
+        self.oes_specH5 = h5_io.create_extendable_h5_dataset(Hm, 'oes_spec', shape=(1, len(wls)), axis=0, dtype=np.float64)
+        self.oes_spec_timeH5 = h5_io.create_extendable_h5_dataset(Hm, 'oes_spec_time', shape=(1,), 
+                                                                  axis=0, dtype=np.float64, chunks=100)
+        self.oes_spec_cycleH5 = h5_io.create_extendable_h5_dataset(Hm, 'oes_spec_cycle', shape=(1,), 
+                                                                  axis=0, dtype=np.int16, chunks=100)
+        
+        # start spectrometer
+        speclive = self.app.measurements['oo_spec_live']
+        speclive.settings['continuous'] = True
+        speclive.settings['activation'] = True
+        
+        self.status = f"Starting Run {self.run_id}..."
+        self.thickness_data = []
+        self.cycles = []
         
         try:
             """
@@ -300,6 +333,10 @@ class AldRunMeasure2(Measurement):
             #plasma_duration_sec = S['plasma_duration']/1000.
             plasma_duration_sec = 8
             while (time.monotonic() - t0) < plasma_duration_sec:
+                current_pressure = self.vat.settings.actual_pressure.read_from_hardware()
+                plasma_vat_position = self.vat.settings.actual_position.read_from_hardware()
+                plasma_lc_position = self.seren_mc2.settings.LC_position.read_from_hardware()
+                plasma_tc_position = self.seren_mc2.settings.TC_position.read_from_hardware()                
                 if self.interrupt_measurement_called:
                     break
                 time.sleep(0.010)
@@ -337,14 +374,11 @@ class AldRunMeasure2(Measurement):
             # Start the ellipsometry
             self.status = "Collecting Ellipsometry Data for the Substrate..."
             #self.filmsense.start_dynamic_measurement_pause()
-            folder_name = datetime.now().strftime("%Y_%m_%d")
-            folder_name = folder_name + f"_{self.settings.Sample_name.val}"
+            os.makedirs(folder_path, exist_ok=True)
             self.filmsense.single_measurement_collect()
-            filename = self.settings.Sample_name.val
-            filename = filename + '_substrate'
-            self.filmsense.save_single_measurement(folder_name, filename)
-            self.thickness_data = []
-            self.cycles = []
+            filename = f"{self.settings.Sample_name.val}_substrate"
+            self.filmsense.external_save_single(filename, folder_path)
+            
             
             self.status = "Moving to the ALD loop..." 
 
@@ -352,6 +386,7 @@ class AldRunMeasure2(Measurement):
             #The ALD Loop
             print('Starting the ALD loop...')
             for i in range(S['Number_of_ALD_cycles']):
+                Hm['cycle_start_time'][i] = time.time()
                 cycle_number = i+1
                 print("ALD Cycle", cycle_number, 'of', S['Number_of_ALD_cycles'])          
                 self.status = f"ALD cycle {cycle_number} out of {S['Number_of_ALD_cycles']}"
@@ -389,6 +424,7 @@ class AldRunMeasure2(Measurement):
                 self.plc.settings['start_ALD_Valve1_dose'] = True
                      
                 while self.plc.settings['start_ALD_Valve1_dose']:
+                    self.vat.settings.actual_pressure.read_from_hardware()
                     if self.interrupt_measurement_called:
                         break
                     self.perform_safety_checks()
@@ -400,12 +436,17 @@ class AldRunMeasure2(Measurement):
                 #Time to purge
                 self.plc.settings['Valve2_ALD_purge_open'] = True
                 ald_purge_time_s = S['ALD_purge_time']/1000
-                time.sleep(ald_purge_time_s)
+                t0 =time.monotonic()
+                while (time.monotonic() - t0) < ald_purge_time_s:
+                    self.vat.settings.actual_pressure.read_from_hardware()
                 self.plc.settings['Valve7_ald_pneumatic_purge_open'] = False 
                 self.plc.settings['MFC4_ALD_purge_SP_sccm'] = 0
                 self.plc.settings['Valve2_ALD_purge_open'] = False
                 
                 
+                if self.interrupt_measurement_called:
+                    break
+
                 ## Plasma Prep Phase
                 
                 #Set plasma VAT position
@@ -432,7 +473,9 @@ class AldRunMeasure2(Measurement):
 
                 #Time to stabilize/prep
                 plasma_prep_time_s = S['plasma_prep_time']/1000
-                time.sleep(plasma_prep_time_s)
+                t0 =time.monotonic()
+                while (time.monotonic() - t0) < plasma_prep_time_s:
+                    self.vat.settings.actual_pressure.read_from_hardware()
                 
                 if self.interrupt_measurement_called:
                     break
@@ -447,10 +490,19 @@ class AldRunMeasure2(Measurement):
                 # plasma duration is in milliseconds
                 plasma_duration_sec = S['plasma_duration']/1000.
                 while (time.monotonic() - t0) < plasma_duration_sec:
+                    self.vat.settings.actual_pressure.read_from_hardware()
+
+                    # Read state of plasma power supply and matching unit
                     self.seren_mc2.settings.LC_position.read_from_hardware()
                     self.seren_mc2.settings.TC_position.read_from_hardware()
                     self.seren_ps.settings.forward_power_readout.read_from_hardware()
                     self.seren_ps.settings.reflected_power.read_from_hardware()
+                    # store OES spectrum
+                    # get_spectrum returns last acquired spectrum, does not wait for new data,
+                    # oo_spec_live must be running
+                    h5_append(self.oes_specH5, self.app.hardware['ocean_optics_spec'].get_spectrum().reshape(1,-1))
+                    h5_append(self.oes_spec_timeH5,np.array([time.time()]))
+                    h5_append(self.oes_spec_cycleH5,np.array([i]))
                     if self.interrupt_measurement_called:
                         break
                     self.perform_safety_checks()
@@ -479,18 +531,20 @@ class AldRunMeasure2(Measurement):
                 
                 ## Plasma Purge Phase
                 plasma_purge_time_s = S['plasma_purge_time']/1000
-                time.sleep(plasma_purge_time_s)
+                t0 =time.monotonic()
+                while (time.monotonic() - t0) < plasma_purge_time_s:
+                    self.vat.settings.actual_pressure.read_from_hardware()
                 
                 #Collect Ellipsometric Data
                 self.status = 'Collecting Ellipsometric data...'
                 self.filmsense.single_measurement_collect()
                 params = self.filmsense.get_params()
-                thickness_value = round(params["Thick(nm).1"],2)
+                thickness_value = round(params["Thick(nm).2"],2)
                 self.thickness_data.append(thickness_value)
                 self.cycles.append(cycle_number)
                 filename = self.settings.Sample_name.val
                 filename = filename + f"_cycle_{cycle_number}"
-                self.filmsense.save_single_measurement(folder_name, filename)
+                self.filmsense.external_save_single(filename, folder_path)
                 #thickness_value_str = f'{thickness_value}'
                 
                 
@@ -567,6 +621,9 @@ class AldRunMeasure2(Measurement):
             # Fully open Throttle Valve (VAT)
             self.vat.settings.target_position.update_value(100)
             self.vat.settings.target_position.write_to_hardware()
+            thickness_array = np.array(self.thickness_data)
+            Hm['thickness_data'] = thickness_array
+            self.h5_file.close()
             
             #Stop the ellipsometry and save the data
             #self.filmsense.stop_dynamic_measurement()
@@ -634,11 +691,19 @@ class AldRunMeasure2(Measurement):
         #print("status:", self.status)
         
         if hasattr(self, 'thickness_data'):
-            self.plotline.setData(self.cycles, self.thickness_data)
+            if len(self.thickness_data)>2:
+                self.plotline.setData(self.cycles, self.thickness_data)
         
             
                 
         
 
-        
+def h5_append(ds, new_data, axis=0):
+    
+    h5_io.extend_h5_dataset_along_axis(ds, ds.shape[axis]+new_data.shape[axis], axis=axis)
+    slice_list = [slice(None),]*len(ds.shape)
+    slice_list[axis] = slice(-new_data.shape[axis]-1,-1)
+    print(slice_list)
+    ds[tuple(slice_list)] = new_data
+
             
