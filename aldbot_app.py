@@ -11,8 +11,8 @@ from ScopeFoundryHW.oceanoptics_spec.oo_spec_measure import OOSpecLive
 from ScopeFoundryHW.mf_crucible.mf_crucible_hw import MFCrucibleHW
 from ScopeFoundryHW.mf_crucible.mf_crucible_controlpanel import MFCrucibleControlPanel
 from aldbot_logger_measure import ALDBotLoggerMeaure
-from ald_run_updated import AldRunMeasure2
-from ald_gui3 import ALDBot_UI3
+from ald_run_measure import AldRunMeasure
+from ald_gui import ALDBot_UI
 
 class ALDBotApp(BaseMicroscopeApp):
     
@@ -31,12 +31,11 @@ class ALDBotApp(BaseMicroscopeApp):
         spec_hw = self.add_hardware(OceanOpticsSpectrometerODirectHW(self))
         self.add_measurement(OOSpecLive(self))
         
-        
         self.add_hardware(MFCrucibleHW(self))
         self.add_measurement(MFCrucibleControlPanel(self, 'mf_crucible'))
         self.add_measurement(ALDBotLoggerMeaure(self))
-        self.add_measurement(AldRunMeasure2(self))       
-        self.add_measurement(ALDBot_UI3(self))
+        self.add_measurement(AldRunMeasure(self, 'ald_run'))       
+        self.add_measurement(ALDBot_UI(self))
         
         
         self.settings_load_ini("aldbot_defaults.ini")

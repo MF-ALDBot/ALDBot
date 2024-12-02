@@ -2,16 +2,18 @@ from ScopeFoundry import Measurement
 from ScopeFoundry.helper_funcs import sibling_path, load_qt_ui_file
 
 
-class ALDBot_UI3(Measurement):
+class ALDBot_UI(Measurement):
     
-    name = 'ald_ui3'
+    name = 'ald_ui'
     
     def setup_figure(self):
         
-        self.ui_filename = sibling_path(__file__,"aldbot_gui3.ui")
+        self.ui_filename = sibling_path(__file__,"aldbot_gui.ui")
         ui = self.ui = load_qt_ui_file(self.ui_filename)
 
         self.vat = self.app.hardware['VAT_Valve']
+        
+        self.seren_ps = self.app.hardware['Seren_Power_Supply']
         
         self.vat.settings.connected.connect_to_widget(
             ui.vat_valve_connect_checkBox)
@@ -132,33 +134,17 @@ class ALDBot_UI3(Measurement):
         self.plc.settings.BNC1_baritron_gauge_mTorr.connect_to_widget(
             ui.baritron_gauge_label)
         
-        #=======================================================================
-        # self.plc.settings.BNC2_mV.connect_to_widget(
-        #     ui.bnc2_read_doubleSpinBox)
-        # 
-        # self.plc.settings.BNC3_mV.connect_to_widget(
-        #     ui.bnc3_read_doubleSpinBox)
-        # 
-        # self.plc.settings.BNC4_mV.connect_to_widget(
-        #     ui.bnc4_read_doubleSpinBox)
-        #=======================================================================
+        self.plc.settings.AIF32_substrate_temp.connect_to_widget(
+            ui.current_temp_label)
         
-        #=======================================================================
-        # self.plc.settings.t1_Preset.connect_to_widget(
-        #     ui.ald1_time_doubleSpinBox)
-        # 
-        # self.plc.settings.t2_Preset.connect_to_widget(
-        #     ui.ald2_time_doubleSpinBox)
-        # 
-        # self.plc.settings.t3_Preset.connect_to_widget(
-        #     ui.ald3_time_doubleSpinBox)
-        #=======================================================================
+        self.plc.settings.PID_SetPoint.connect_to_widget(
+            ui.temp_setpoint_doubleSpinBox)
         
         def open_valve1():
             self.plc.settings['start_ALD_Valve1_dose'] = True
         ui.ald_valves_pushButton.clicked.connect(
             open_valve1)
-        
+
         #=======================================================================
         # ui.ald2_pushButton.clicked.connect(
         #     self.open_valve2)
@@ -166,12 +152,62 @@ class ALDBot_UI3(Measurement):
         # ui.ald3_pushButton.clicked.connect(
         #     self.open_valve3)
         #=======================================================================
-        self.plc.settings.Valve2_ALD_purge_open.connect_to_widget(ui.valve_ald_purge_checkBox)
-        self.plc.settings.Valve3_plasma_purge_open.connect_to_widget(ui.valve_plasma_purge_checkBox)
-        self.plc.settings.Valve4_plasma_process_gas_open.connect_to_widget(ui.valve_h2_checkBox)
+        
+        self.plc.settings.Valve2_ALD_purge_open.connect_to_widget(
+            ui.valve_ald_purge_checkBox)
+        self.plc.settings.Valve3_plasma_purge_open.connect_to_widget(
+            ui.valve_plasma_purge_checkBox)
+        self.plc.settings.Valve4_plasma_process_gas_open.connect_to_widget(
+            ui.valve_h2_checkBox)
         self.plc.settings.Valve5_plasma_nitrogen_open.connect_to_widget(ui.valve_n2_plasma_checkBox)
-        self.plc.settings.Valve6_plasma_argon_open.connect_to_widget(ui.valve_ar_plasma_checkBox)           
-        self.plc.settings.Valve7_ald_pneumatic_purge_open.connect_to_widget(ui.valve_ald_purge_pneumatic_checkBox)
-        self.plc.settings.Valve8_window_purge_open.connect_to_widget(ui.valve_window_purge_checkBox)
+        self.plc.settings.Valve6_plasma_argon_open.connect_to_widget(
+            ui.valve_ar_plasma_checkBox)           
+        self.plc.settings.Valve7_ald_pneumatic_purge_open.connect_to_widget(
+            ui.valve_ald_purge_pneumatic_checkBox)
+        self.plc.settings.Valve8_window_purge_open.connect_to_widget(
+            ui.valve_window_purge_checkBox)
         
+        def goto_safe():
+            # Turn off Plasma
+            self.seren_ps.settings['RF_enable'] = False
+            # close all valves
+            self.plc.settings['Valve2_ALD_purge_open'] = False
+            self.plc.settings['Valve3_plasma_purge_open'] = False
+            self.plc.settings['Valve4_plasma_process_gas_open'] = False
+            self.plc.settings['Valve5_plasma_nitrogen_open'] = False
+            self.plc.settings['Valve6_plasma_argon_open'] = False
+            self.plc.settings['Valve7_ald_pneumatic_purge_open'] = False
+            self.plc.settings['Valve8_window_purge_open'] = False
+            # Zero all MFCs
+            self.plc.settings['MFC1_H2_SP_sccm'] = 0
+            self.plc.settings['MFC2_N2_plasma_SP_sccm'] = 0
+            self.plc.settings['MFC3_Ar_plasma_SP_sccm'] = 0
+            self.plc.settings['MFC4_ALD_purge_SP_sccm'] = 0
+            # Fully open Throttle Valve (VAT)
+            self.vat.settings.target_position.update_value(100)
+            self.vat.settings.target_position.write_to_hardware()
+            
+        ui.safe_state_pushButton.clicked.connect(
+            goto_safe)
         
+        def pump_down():
+            # close all valves
+            self.plc.settings['Valve2_ALD_purge_open'] = True
+            self.plc.settings['Valve3_plasma_purge_open'] = False
+            self.plc.settings['Valve4_plasma_process_gas_open'] = False
+            self.plc.settings['Valve5_plasma_nitrogen_open'] = False
+            self.plc.settings['Valve6_plasma_argon_open'] = False
+            self.plc.settings['Valve7_ald_pneumatic_purge_open'] = False
+            self.plc.settings['Valve8_window_purge_open'] = False
+            #Open MFCs to purge the space between them and the shut off valves
+            self.plc.settings['MFC1_H2_SP_sccm'] = 50
+            self.plc.settings['MFC2_N2_plasma_SP_sccm'] = 50
+            self.plc.settings['MFC3_Ar_plasma_SP_sccm'] = 50
+            self.plc.settings['MFC4_ALD_purge_SP_sccm'] = 50
+            # Fully open Throttle Valve (VAT)
+            self.vat.settings.target_position.update_value(100)
+            self.vat.settings.target_position.write_to_hardware()
+            
+        ui.pump_down_pushButton.clicked.connect(
+            pump_down)
+
