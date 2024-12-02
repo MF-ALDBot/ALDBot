@@ -8,6 +8,8 @@ from ScopeFoundryHW.productivity_plc.productivity_plc import ProductivityPLC
 from ScopeFoundryHW.data_streamer.influxdb_lq_data_streamer_hw import InfluxDB_LQ_StreamerHW
 from ScopeFoundryHW.oceanoptics_spec.oo_spec_odirect_hw import OceanOpticsSpectrometerODirectHW
 from ScopeFoundryHW.oceanoptics_spec.oo_spec_measure import OOSpecLive
+from ScopeFoundryHW.mf_crucible.mf_crucible_hw import MFCrucibleHW
+from ScopeFoundryHW.mf_crucible.mf_crucible_controlpanel import MFCrucibleControlPanel
 from aldbot_logger_measure import ALDBotLoggerMeaure
 from ald_run_updated import AldRunMeasure2
 from ald_gui3 import ALDBot_UI3
@@ -30,6 +32,8 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_measurement(OOSpecLive(self))
         
         
+        self.add_hardware(MFCrucibleHW(self))
+        self.add_measurement(MFCrucibleControlPanel(self, 'mf_crucible'))
         self.add_measurement(ALDBotLoggerMeaure(self))
         self.add_measurement(AldRunMeasure2(self))       
         self.add_measurement(ALDBot_UI3(self))
