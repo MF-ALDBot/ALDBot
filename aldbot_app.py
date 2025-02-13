@@ -25,7 +25,7 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_hardware(Pfeiffer_VGC_Hardware(self, name='Pfeiffer_MaxiGauge'))        
         self.add_hardware(Seren_HW(self, name='Seren_Power_Supply'))        
         self.add_hardware(Seren_MC2_HW(self, name='Seren_Match_Box'))
-        self.add_hardware(ProductivityPLC(self, tags_csv_filename="ald_test_extended.csv"))       
+        self.add_hardware(ProductivityPLC(self, tags_csv_filename="aldbot_plc_firmware_Extended.csv"))       
         self.add_hardware(InfluxDB_LQ_StreamerHW(self))
         self.add_hardware(Filmsense_Ellipsometer_HW(self, name='filmsense_ellipsometer'))        
         spec_hw = self.add_hardware(OceanOpticsSpectrometerODirectHW(self))
