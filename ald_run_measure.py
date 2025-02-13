@@ -40,7 +40,7 @@ class AldRunMeasure(Measurement):
         self.settings.New('plasma_purge_time', dtype = int, unit='ms', initial = 1000)
         
         # Global Parameters
-        self.settings.New('Number_of_ALD_cycles', dtype = int, vmin=1, initial = 10)
+        self.settings.New('Number_of_ALD_cycles', dtype = int, vmin=1, initial = 50)
         
         # Metadata
         self.settings.New('Sample_name', dtype=str, initial = 'Si Wafer')
@@ -239,7 +239,7 @@ class AldRunMeasure(Measurement):
         self.oes_spec_cycleH5 = h5_io.create_extendable_h5_dataset(Hm, 'oes_spec_cycle', shape=(1,), 
                                                                   axis=0, dtype=np.int16, chunks=100)
         
-        # start spectrometer
+        # start the spectrometer
         speclive = self.app.measurements['oo_spec_live']
         speclive.settings['continuous'] = True
         speclive.settings['activation'] = True
@@ -247,6 +247,7 @@ class AldRunMeasure(Measurement):
         self.status = f"Starting Run {self.run_id}..."
         self.thickness_data = []
         self.cycles = []
+        self.growth_rate = []
         
         try:
             """
@@ -254,7 +255,13 @@ class AldRunMeasure(Measurement):
             self.plc.settings['PID_SetPoint'] = S['substrate_temp']
             """
             #Start the Ellipsometry (dynamic)
-            self.filmsense.start_dynamic_measurement()            
+            self.filmsense.start_dynamic_measurement()
+            self.status = 'Collecting ellipsometry for the substrate'
+            t0 =time.monotonic()
+            while (time.monotonic() - t0) < 10:
+                if self.interrupt_measurement_called:
+                    break
+                            
             
             #Set ALD valve timings
             self.plc.settings['t1_Preset'] = S['precursor_dose_time']
@@ -300,11 +307,13 @@ class AldRunMeasure(Measurement):
             
 
             ## Get the plasma parameters
-                        
+            ## Skipping this part for now, because not using it
+            
+            """            
             #Pre-tune the matching box
             print('Tuning the matching box...')       
-            self.seren_mc2.settings['set_lc_preset_position'] = 40
-            self.seren_mc2.settings['set_tc_preset_position'] = 40
+            self.seren_mc2.settings['set_lc_preset_position'] = 52
+            self.seren_mc2.settings['set_tc_preset_position'] = 31
             self.seren_mc2.goto()
             self.seren_mc2.settings['LC_auto'] = True
             self.seren_mc2.settings['TC_auto'] = True
@@ -362,7 +371,7 @@ class AldRunMeasure(Measurement):
             self.seren_ps.settings['RF_enable'] = True
         
             t0 = time.monotonic()
-            plasma_duration_sec = 5
+            plasma_duration_sec = 3
             while (time.monotonic() - t0) < plasma_duration_sec:
                 current_pressure = self.vat.settings.actual_pressure.read_from_hardware()
                 plasma_vat_position = self.vat.settings.actual_position.read_from_hardware()
@@ -375,16 +384,11 @@ class AldRunMeasure(Measurement):
             plasma_vat_position = self.vat.settings.actual_position.read_from_hardware()
             print(f"Plasma VAT position is {plasma_vat_position}")
             self.seren_ps.settings['RF_enable'] = False  
+            """
             
             if self.interrupt_measurement_called:
                 return
             self.perform_safety_checks()
-            
-            """
-            self.seren_mc2.settings['set_lc_preset_position'] = plasma_lc_position
-            self.seren_mc2.settings['set_tc_preset_position'] = plasma_tc_position
-            self.seren_mc2.goto()
-            """
                         
             #Close the plasma supply valves
             self.plc.settings['Valve4_plasma_process_gas_open'] = False # MFC1 pre-valve close
@@ -399,7 +403,7 @@ class AldRunMeasure(Measurement):
             if not ((current_temp - tolerance) <  setpoint_temp < (current_temp + tolerance)):
                 raise ValueError('Substrate temperature is far from setpoint', setpoint_temp, current_temp)
             
-            # Start the ellipsometry (Single measurements)
+            # Start the ellipsometry (IF single measurements)
             #self.status = "Collecting Ellipsometry Data for the Substrate..."
             os.makedirs(folder_path, exist_ok=True)
             #self.filmsense.single_measurement_collect()
@@ -422,6 +426,11 @@ class AldRunMeasure(Measurement):
                 if self.interrupt_measurement_called:
                     break
                 self.perform_safety_checks()
+                
+                #Pre-tune the matching box
+                self.seren_mc2.settings['set_lc_preset_position'] = self.settings['LC_preset']  #plasma_lc_position
+                self.seren_mc2.settings['set_tc_preset_position'] = self.settings['TC_preset'] #plasma_tc_position
+                self.seren_mc2.goto()
                 
                 """
                 #Open window purges
@@ -455,12 +464,24 @@ class AldRunMeasure(Measurement):
                 #ALD Valves Sequence
                 print('Starting the ALD valve sequence...')
                 self.plc.settings['start_ALD_Valve1_dose'] = True
-                     
-                while self.plc.settings['start_ALD_Valve1_dose']:
+                
+                def read_ald_dose_state():
+                    result =  self.plc.modbus_client.read_coils(self.plc.tag_db['start_ALD_Valve1_dose']['modbus_start'])
+                    if result is not None and isinstance(result, list) and len(result) > 0:
+                        return result[0]
+                    return None
+                
+                #while self.plc.settings['start_ALD_Valve1_dose']:
+                dose_state = True
+                while dose_state:                    
+                    dose_state = read_ald_dose_state()
+                    if dose_state is None:
+                        print("Warning: Failed to read ALD dose state, retrying...")
+                        continue
                     self.vat.settings.actual_pressure.read_from_hardware()
                     if self.interrupt_measurement_called:
                         break
-                    self.perform_safety_checks()             
+                    self.perform_safety_checks()
                 
                 ## MO Purge Phase                
                 #Time to purge
@@ -484,11 +505,11 @@ class AldRunMeasure(Measurement):
                 ## Plasma Prep Phase
                 
                 #Set plasma VAT position
-                self.vat.settings.target_position.update_value(plasma_vat_position)
-                self.vat.settings.target_position.write_to_hardware()
-                self.seren_mc2.settings['set_lc_preset_position'] = self.settings['LC_preset']  #plasma_lc_position
-                self.seren_mc2.settings['set_tc_preset_position'] = self.settings['TC_preset'] #plasma_tc_position
-                self.seren_mc2.goto()
+                #self.vat.settings.target_position.update_value(plasma_vat_position)
+                #self.vat.settings.target_position.write_to_hardware()
+                self.vat.settings.target_pressure.update_value(S['plasma_pressure'], update_hardware=True)
+                self.vat.settings.target_pressure.write_to_hardware()   
+                
                 
                 #Close window purge
                 self.plc.settings['Valve8_window_purge_open'] = False
@@ -553,6 +574,21 @@ class AldRunMeasure(Measurement):
                 self.perform_safety_checks()
                 
                 ## Plasma Purge Prep
+                
+                # Close Plasma gases  
+                self.plc.settings['Valve4_plasma_process_gas_open'] = False # MFC1 pre-valve close
+                self.plc.settings['MFC1_H2_SP_sccm'] = 0
+                self.plc.settings['Valve5_plasma_nitrogen_open'] = False # MFC2 pre-valve close
+                self.plc.settings['MFC2_N2_plasma_SP_sccm'] = 0
+                
+                #Open Ar Purge
+                
+                self.plc.settings['MFC4_ALD_purge_SP_sccm'] = S['ALD_purge_flow_rate']
+                self.plc.settings['MFC3_Ar_plasma_SP_sccm'] = self.settings['Ar_process_flow_rate']
+                self.plc.settings['Valve2_ALD_purge_open'] = True
+                self.plc.settings['Valve7_ald_pneumatic_purge_open'] = True      
+                
+                
                 '''
                 self.plc.settings['Valve4_plasma_process_gas_open'] = False # MFC1 pre-valve close
                 self.plc.settings['MFC1_H2_SP_sccm'] = 0
@@ -574,20 +610,17 @@ class AldRunMeasure(Measurement):
                 #self.filmsense.single_measurement_collect()
                 #time.sleep(1.5)
                 params = self.filmsense.get_params()
-                thickness_value = round(params["Thick(nm).3"],2)
+                thickness_value = round(params["Thick(nm).2"],2)
                 self.thickness_data.append(thickness_value)
                 self.cycles.append(cycle_number)
+                if len(self.thickness_data)>2:
+                    cycle_growth = self.thickness_data[-1] - self.thickness_data[-2]
+                    print('Growth rate this cycle:', cycle_growth)
+                    self.growth_rate.append(cycle_growth)
                 #filename = self.settings.Sample_name.val
                 #filename = filename + f"_cycle_{cycle_number}"
                 #self.filmsense.external_save_single(filename, folder_path)
                 #thickness_value_str = f'{thickness_value}'
-                
-                
-                # Close Plasma gases  
-                self.plc.settings['Valve4_plasma_process_gas_open'] = False # MFC1 pre-valve close
-                self.plc.settings['MFC1_H2_SP_sccm'] = 0
-                self.plc.settings['Valve5_plasma_nitrogen_open'] = False # MFC2 pre-valve close
-                self.plc.settings['MFC2_N2_plasma_SP_sccm'] = 0   
                 
                 if self.interrupt_measurement_called:
                     break
@@ -622,6 +655,8 @@ class AldRunMeasure(Measurement):
             self.vat.settings.target_position.write_to_hardware()
             self.status = 'System is purging to base pressure'
             
+            #Stop the ellipsometry
+            self.filmsense.stop_dynamic_measurement()
             #Purge all the lines
             t0 = time.monotonic()
             while (time.monotonic() - t0) < 120:
@@ -656,6 +691,10 @@ class AldRunMeasure(Measurement):
             self.vat.settings.target_position.write_to_hardware()
             thickness_array = np.array(self.thickness_data)
             Hm['thickness_data'] = thickness_array
+            gr_array = np.array(self.growth_rate)
+            growth_rate_ave = np.mean(gr_array)
+            print('Average Growth rate for the deposition:', growth_rate_ave)
+            Hm['growth_rate'] = gr_array
             self.h5_file.close()
             
             #Stop the ellipsometry and save the data
