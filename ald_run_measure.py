@@ -308,6 +308,9 @@ class AldRunMeasure(Measurement):
 
             ## Get the plasma parameters
             ## Skipping this part for now, because not using it
+
+            #Set the RF setpoint
+            self.seren_ps.settings['set_forward_power'] = S.RF_power_setpoint.value
             
             """            
             #Pre-tune the matching box
@@ -659,7 +662,7 @@ class AldRunMeasure(Measurement):
             self.filmsense.stop_dynamic_measurement()
             #Purge all the lines
             t0 = time.monotonic()
-            while (time.monotonic() - t0) < 120:
+            while (time.monotonic() - t0) < 5: ##CHANGE BACK TO 120??
                 if self.interrupt_measurement_called:
                     break
                 time.sleep(1)            
@@ -700,6 +703,7 @@ class AldRunMeasure(Measurement):
             #Stop the ellipsometry and save the data
             self.filmsense.stop_dynamic_measurement()
             self.filmsense.external_save_dynamic(filename,folder_path)
+            # TODO store ellipsometer data into H5
             
             self.status = 'System is in the safe state. The process is finished.'
             
