@@ -13,6 +13,7 @@ from ScopeFoundryHW.mf_crucible.mf_crucible_controlpanel import MFCrucibleContro
 from aldbot_logger_measure import ALDBotLoggerMeaure
 from ald_run_measure import AldRunMeasure
 from ald_gui import ALDBot_UI
+from ald_robot_measure import ALDRobot
 
 class ALDBotApp(BaseMicroscopeApp):
     
@@ -36,6 +37,7 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_measurement(ALDBotLoggerMeaure(self))
         self.add_measurement(AldRunMeasure(self, 'ald_run'))       
         self.add_measurement(ALDBot_UI(self))
+        self.add_measurement(ALDRobot(self))
         
         
         self.settings_load_ini("aldbot_defaults.ini")
