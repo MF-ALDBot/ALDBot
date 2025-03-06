@@ -95,6 +95,7 @@ class GPmodel(object):
         # previous trained hyperparameters implies that no training is required -- as long as data is the same
         # don't use prev_trained_GP_hps if data has changed!!
         if prev_trained_GP_hps is None:
+            print("training GP model...")
             self.my_gpo.train(hyperparameter_bounds = bounds, init_hyperparameters = self.init_hps, method='global', max_iter = 4000)
             
         self.current_trained_hps = self.my_gpo.hyperparameters
@@ -109,11 +110,11 @@ class GPmodel(object):
         ###########################################################################
         ###########################################################################
         # Run Bayesian Optimization to identify new point
-        num_of_input_dimensions = self.my_gpo.x_data[1]
+        #num_of_input_dimensions = self.my_gpo.x_data[1]
         
         # Specifying the domain of search for the Bayesian Optimization. 
-        # If you don't want to seach in any of the input dimensions, restrict the domain to be [0,0] or any other normalized point of interest
-        Optimization_domain = np.tile([0, 1], (num_of_input_dimensions, 1))
+        # If you don't want to search in any of the input dimensions, restrict the domain to be [0,0] or any other normalized point of interest
+        Optimization_domain = np.tile([0, 1], (self.num_of_input_dimensions, 1))
     
         print("Running Bayesian Optimization...")
         

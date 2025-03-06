@@ -21,7 +21,7 @@ def process_ald(data_file_path):
     filepath_txt = folder_path + '/' + sample_name + '.txt'
 
     # Import the data from a .txt file
-    ellips_data = pd.read_csv(filepath_txt, delim_whitespace=True, skiprows=10) 
+    ellips_data = pd.read_csv(filepath_txt, sep='\s+', skiprows=10) 
     thickness_ellips_data = ellips_data["Thick(nm).2"].to_numpy()
     fit_diff_data = ellips_data["Fit_Diff"].to_numpy()
 

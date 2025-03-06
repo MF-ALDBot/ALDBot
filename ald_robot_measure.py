@@ -39,8 +39,8 @@ class ALDRobot(Measurement):
         # create data object
         
 
-        
-        runs_df = pd.DataFrame()
+        # TODO use self.runs_df for live access to table
+        self.runs_df = pd.DataFrame()
         # | Run ID | sample_id | raw_param1 | ... | raw_param N | prior (bool) | output_param_1 | output_param_2 |
         
         
@@ -49,13 +49,14 @@ class ALDRobot(Measurement):
         for fname in glob.glob(C['prior_datasets_dir']+"/*/*.h5"):
             result = process_ald(fname)
             #append result to dataframe, add column in DF of "prior" True
-            runs_df = pd.concat([runs_df, result], ignore_index=True)   
+            self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
 
         optimizer_results = []
         
         try:
             print(C['num_runs'])
             for i in range(C['num_runs']):
+                print(f"ald_robot run {i} of {C['num_runs']}. Runs DF: {len(self.runs_df)} rows", "="*30)
                 if self.interrupt_measurement_called:
                     break
                 
@@ -64,7 +65,7 @@ class ALDRobot(Measurement):
                     parameter_space_limits.append(C['param_limits'][param])
                 
                 
-                GP = gp_results = Get_New_Points_With_GP(df=runs_df, 
+                GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
                                        parameter_space_limits=parameter_space_limits,
@@ -89,11 +90,11 @@ class ALDRobot(Measurement):
                 
                 result = process_ald(new_dataset_fname)
                 #append result to dataframe, add column in DF of "prior" True
-                runs_df = pd.concat([runs_df, result], ignore_index=True)   
+                self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
         finally:
             CI = self.campaign_info = {}
             CI['config'] = config
-            CI['runs'] = runs_df.to_dict(orient='dict')
+            CI['runs'] = self.runs_df.to_dict(orient='dict')
             CI['optimizer'] = optimizer_results
             with open(f"{campaign_mfid}_aldbot_campaign_output.json", 'w') as fp:
                 import numpy as np
@@ -103,7 +104,7 @@ class ALDRobot(Measurement):
                             return obj.tolist()
                         return json.JSONEncoder.default(self, obj)
 
-                json.dump(CI,fp, cls=NumpyArrayEncoder )
+                json.dump(CI,fp, cls=NumpyArrayEncoder, indent=2 )
             # save data
             #    include campaign id
             #    timestamps of runs
