@@ -24,7 +24,7 @@ class ALDRobot(Measurement):
         with open(self.settings['campaign_config_file'], "r") as file:
             config = C = json.load(file)
 
-        campaign_mfid, campagin_uuid = cb32_uuid()
+        campaign_mfid, campaign_uuid = cb32_uuid()
         # config should have the following:
         #    list of prior runs (dataset_ids? or filenames?)
         #    number of runs
@@ -47,8 +47,10 @@ class ALDRobot(Measurement):
         # Load prior datasets and preprocess
         # look for prior datasets in directory:
         for fname in glob.glob(C['prior_datasets_dir']+"/*/*.h5"):
+            print(fname)
             result = process_ald(fname)
             #append result to dataframe, add column in DF of "prior" True
+            result['is_prior'] = [True]
             self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
 
         optimizer_results = []
@@ -90,6 +92,8 @@ class ALDRobot(Measurement):
                 
                 result = process_ald(new_dataset_fname)
                 #append result to dataframe, add column in DF of "prior" True
+                result['is_prior'] = [False]
+                result['from_recommendation_id'] = [gp_results['recommendation_id']]
                 self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
         finally:
             CI = self.campaign_info = {}
