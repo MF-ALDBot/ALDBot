@@ -257,13 +257,25 @@ def Get_New_Points_With_GP(df, input_names, output_name,
     ........................ Code prepared by Maher Alghalayini on February 12, 2025 ........................
     
     '''
-    
+    import time
+    t0 = t00 = time.monotonic()
     gpmodel = GPmodel(df, input_names, output_name, parameter_space_limits, prev_trained_GP_hps)
+    print(f"GPmodel trained in {time.monotonic() - t0} sec")
+    t0 = time.monotonic()
     new_pt_dict = gpmodel.identify_new_points(num_new_points)
+    print(f"New point ident in {time.monotonic() - t0} sec")
+    t0 = time.monotonic()
     average_rmse = gpmodel.perform_rmse(num_RMSE_trials)
-   
+    print(f"RMSE calc in {time.monotonic() - t0} sec")
+
+    from ScopeFoundry.cb32_uuid import cb32_uuid
+    mfid, _uuid = cb32_uuid()
+
+
     #return  new_points, new_predicted_output, new_predicted_uncertainty, current_trained_hps, average_rmse
-    return {'new_points': new_pt_dict['new_points'], 
+    return {'recommendation_id':  mfid,
+            'elapsed_time': time.monotonic() - t00,
+            'new_points': new_pt_dict['new_points'], 
             "new_predicted_output":new_pt_dict['new_predicted_output'], 
             "new_predicted_uncertainty":new_pt_dict['new_predicted_uncertainty'],
             "current_trained_hps":gpmodel.current_trained_hps,
