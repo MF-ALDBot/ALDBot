@@ -420,6 +420,7 @@ class AldRunMeasure(Measurement):
             #The ALD Loop
             print('Starting the ALD loop...')
             for i in range(S['Number_of_ALD_cycles']):
+                self.set_progress(int(100*(i+1)/S['Number_of_ALD_cycles']))
                 
                 Hm['cycle_start_time'][i] = time.time()
                 cycle_number = i+1
