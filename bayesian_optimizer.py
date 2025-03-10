@@ -257,6 +257,7 @@ def Get_New_Points_With_GP(df, input_names, output_name,
     ........................ Code prepared by Maher Alghalayini on February 12, 2025 ........................
     
     '''
+    df = pd.DataFrame(df)
     import time
     t0 = t00 = time.monotonic()
     gpmodel = GPmodel(df, input_names, output_name, parameter_space_limits, prev_trained_GP_hps)
