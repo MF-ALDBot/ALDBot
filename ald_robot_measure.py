@@ -6,6 +6,7 @@ from bayesian_optimizer import Get_New_Points_With_GP
 from ald_data_processing import process_ald
 import glob
 
+
 class ALDRobot(Measurement):
     
     name = 'ald_robot'
@@ -67,18 +68,25 @@ class ALDRobot(Measurement):
                     parameter_space_limits.append(C['param_limits'][param])
                 
                 
-                GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
+                # GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
+                #                        input_names=C['modeled_params'], 
+                #                        output_name=C['model_output_param'],
+                #                        parameter_space_limits=parameter_space_limits,
+                #                        num_new_points=1,
+                #                        num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
+                
+                GP = gp_results = self.submit_zmq_job_and_wait(
+                                       "Get_New_Points_With_GP",
+                                       df=self.runs_df.to_dict(), 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
                                        parameter_space_limits=parameter_space_limits,
                                        num_new_points=1,
-                                       num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
-                
-
+                                       num_RMSE_trials=C['num_RMSE_trials'])
                     
                 optimizer_results.append(gp_results)
-            
-                new_point_dict = {name:GP['new_points'][0,:][i] for i,name in enumerate(C['modeled_params'])}
+                import numpy as np
+                new_point_dict = {name:np.array(GP['new_points'])[0,:][i] for i,name in enumerate(C['modeled_params'])}
 
                 def subset_dict(original_dict, keys):
                     return {k: original_dict[k] for k in keys if k in original_dict}
@@ -164,6 +172,104 @@ class ALDRobot(Measurement):
                 M.interrupt()
             time.sleep(0.1)
         self.log.info('Measurement complete {}'.format(M.name))
+
+
+
+    def submit_zmq_job_and_wait(self, job_name, **kwargs):
+        print("submit_zmq_job_and_wait")
+        import zmq
+        import zmq.auth
+        import json
+        import os
+        import sys
+
+        # Load client + server keys
+        certs_dir = "zmq_certs"
+        client_public_file = os.path.join(certs_dir, "client.pub")
+        client_secret_file = os.path.join(certs_dir, "client.key_secret")
+        server_public_file = os.path.join(certs_dir, "server.pub")
+    
+        server_public_file = os.path.join(certs_dir, "server.key")
+        server_public, _ = zmq.auth.load_certificate(server_public_file)
+    
+        client_public, client_secret = zmq.auth.load_certificate(client_secret_file)
+    
+        context = zmq.Context.instance()
+    
+        # 1) REQ socket => connect to server for job submission
+        req_socket = context.socket(zmq.REQ)
+        # req_socket.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+        # req_socket.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+        # req_socket.setsockopt(zmq.CURVE_SERVERKEY, server_public)    
+        req_socket.setsockopt(zmq.RCVTIMEO, 1000)
+        req_socket.connect("tcp://esbstudio.dhcp.lbl.gov:5555")
+            
+        # 2) SUB socket => subscribe to status updates
+        sub_socket = context.socket(zmq.SUB)
+        # sub_socket.setsockopt(zmq.CURVE_SECRETKEY, client_secret)
+        # sub_socket.setsockopt(zmq.CURVE_PUBLICKEY, client_public)
+        # sub_socket.setsockopt(zmq.CURVE_SERVERKEY, server_public)
+        sub_socket.connect("tcp://esbstudio.dhcp.lbl.gov:5556")
+    
+        # We subscribe to everything, then filter the job_id in code.
+        # Alternatively, you can use a topic-based scheme.
+        sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+    
+        print("submit_zmq_job_and_2")
+
+        # Submit a job
+        request = {
+            "method": job_name,
+            "params": kwargs
+        }
+        print(f"REQ {request}")
+        req_socket.send_string(json.dumps(request))
+        reply_raw = req_socket.recv_string()
+        reply = json.loads(reply_raw)
+        print("reply")
+    
+        if reply["status"] != "ok":
+            raise IOError(f"ERROR: {reply.get('error')}")
+    
+        job_id = reply["job_id"]
+        print(f"[Client] Submitted job. job_id = {job_id}")
+    
+        poller = zmq.Poller()
+        poller.register(sub_socket, zmq.POLLIN)
+
+        # Listen for PUB updates until job is done
+        print("[Client] Waiting for status updates...")
+        while True:
+            if self.interrupt_measurement_called:
+                break
+            
+            #print("Poll",  poller.poll(timeout=10))
+            
+            def msg_avail():
+                socks = dict(poller.poll(timeout=10))
+                if sub_socket in socks and socks[sub_socket] == zmq.POLLIN:
+                    return True
+                else: return False
+
+            # skip rest of no message ready
+            if not msg_avail():
+                if self.interrupt_measurement_called:
+                    break
+                continue
+            
+            # if there is a message, receive it and return response
+            msg = sub_socket.recv_string()
+            update = json.loads(msg)
+    
+            # If you're receiving many updates, you might filter by job_id here
+            if update["job_id"] == job_id:
+                print(f"[Status] job_id={update['job_id']} ", end="")
+                print(f"progress={update['progress']} ", end="")
+                print(f"done={update['done']}")
+    
+                if update["done"]:
+                    print("[Client] Job is complete. Exiting.")
+                    return update['response']
 
         
             
