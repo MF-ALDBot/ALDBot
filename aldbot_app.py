@@ -1,6 +1,7 @@
 from ScopeFoundry import BaseMicroscopeApp
 from ScopeFoundryHW.ALD.Seren_matching_box.seren_mc2_hw import Seren_MC2_HW
-from ScopeFoundryHW.ALD.pfeiffer_vgc.pfeiffer_vgc_hw import Pfeiffer_VGC_Hardware
+from ScopeFoundryHW.pfeiffer_vgc.pfeiffer_vgc_hw import Pfeiffer_VGC_Hardware
+from ScopeFoundryHW.pfeiffer_vgc.pfeiffer_mpt200_hw import PfeifferVacuumMPT200MultiHW
 from ScopeFoundryHW.ALD.VAT_throttle.vat_throttle_hw import VAT_Throttle_HW
 from ScopeFoundryHW.ALD.Seren.seren_hw import Seren_HW
 from ScopeFoundryHW.filmsense_ellipsometer.filmsense_ellipsometer_hw import Filmsense_Ellipsometer_HW
@@ -14,6 +15,7 @@ from aldbot_logger_measure import ALDBotLoggerMeaure
 from ald_run_measure import AldRunMeasure
 from ald_gui import ALDBot_UI
 from ald_robot_measure import ALDRobot
+from ald_robot_random_exps import ALDRobotRNG
 
 class ALDBotApp(BaseMicroscopeApp):
     
@@ -23,7 +25,8 @@ class ALDBotApp(BaseMicroscopeApp):
         
         
         self.add_hardware(VAT_Throttle_HW(self, name='VAT_Valve'))        
-        self.add_hardware(Pfeiffer_VGC_Hardware(self, name='Pfeiffer_MaxiGauge'))        
+        self.add_hardware(Pfeiffer_VGC_Hardware(self, name='Pfeiffer_MaxiGauge'))
+        self.add_hardware(PfeifferVacuumMPT200MultiHW(self, name='Pfeiffer_Chamber_Gauge'))        
         self.add_hardware(Seren_HW(self, name='Seren_Power_Supply'))        
         self.add_hardware(Seren_MC2_HW(self, name='Seren_Match_Box'))
         self.add_hardware(ProductivityPLC(self, tags_csv_filename="aldbot_plc_firmware_Extended.csv"))       
@@ -38,6 +41,7 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_measurement(AldRunMeasure(self, 'ald_run'))       
         self.add_measurement(ALDBot_UI(self))
         self.add_measurement(ALDRobot(self))
+        self.add_measurement(ALDRobotRNG(self))
         
         
         self.settings_load_ini("aldbot_defaults.ini")

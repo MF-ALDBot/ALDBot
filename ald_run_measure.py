@@ -51,6 +51,7 @@ class AldRunMeasure(Measurement):
         
         # Hardware
         self.maxigauge = self.app.hardware['Pfeiffer_MaxiGauge']
+        self.chamb_gauge = self.app.hardware['Pfeiffer_Chamber_Gauge']
         self.vat = self.app.hardware['VAT_Valve']
         self.plc = self.app.hardware['productivity_plc']
         self.seren_ps = self.app.hardware['Seren_Power_Supply']
@@ -169,11 +170,11 @@ class AldRunMeasure(Measurement):
             return f"{value:.3e} {unit}" 
         
         def update_gauge1_display():
-            pressure_value = self.maxigauge.settings['ch1_pressure_scaled']
+            pressure_value = self.chamb_gauge.settings['gauge1_pressure_scaled']
             formatted_value = si_format(pressure_value, unit='torr')
             ui.pressure_pfeiffer_write_label.setText(formatted_value)
         
-        self.maxigauge.settings.ch1_pressure_scaled.add_listener(update_gauge1_display)
+        self.chamb_gauge.settings.gauge1_pressure_scaled.add_listener(update_gauge1_display)
         
         self.seren_ps.settings.connected.connect_to_widget(
             ui.seren_power_supply_connect_checkBox)
@@ -296,7 +297,7 @@ class AldRunMeasure(Measurement):
             
             #Set process pressure
             print('Trying to set process pressure...')
-            if self.set_process_pressure(S['process_pressure'], timeout=10, tolerance = 4, stabilization_time=5.0):
+            if self.set_process_pressure(S['process_pressure'], timeout=10, tolerance = 8, stabilization_time=5.0):
                 print('Process pressure setpoint reached')
             else:
                 raise RuntimeError("Error: Process pressure did not stabilize.")
@@ -663,7 +664,7 @@ class AldRunMeasure(Measurement):
             self.filmsense.stop_dynamic_measurement()
             #Purge all the lines
             t0 = time.monotonic()
-            while (time.monotonic() - t0) < 5: ##CHANGE BACK TO 120??
+            while (time.monotonic() - t0) < 100: ##CHANGE BACK TO 120??
                 if self.interrupt_measurement_called:
                     break
                 time.sleep(1)            
@@ -720,7 +721,7 @@ class AldRunMeasure(Measurement):
         
         t0 = time.monotonic()
         
-        time.sleep(1)
+        time.sleep(2)
         
         while True:
             current_pressure = self.vat.settings.actual_pressure.read_from_hardware()

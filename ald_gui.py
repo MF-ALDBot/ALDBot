@@ -32,6 +32,7 @@ class ALDBot_UI(Measurement):
                 
         
         self.gauge = self.app.hardware['Pfeiffer_MaxiGauge']
+        self.chamb_gauge = self.app.hardware['Pfeiffer_Chamber_Gauge']
         
         self.gauge.settings.connected.connect_to_widget(
             ui.maxigauge_connect_checkBox)
@@ -49,11 +50,11 @@ class ALDBot_UI(Measurement):
             return f"{value:.3e} {unit}" 
         
         def update_gauge1_display():
-            pressure_value = self.gauge.settings['ch1_pressure_scaled']
+            pressure_value = self.chamb_gauge.settings['gauge1_pressure_scaled']
             formatted_value = si_format(pressure_value, unit='torr')
             ui.gauge1_label.setText(formatted_value)
         
-        self.gauge.settings.ch1_pressure_scaled.add_listener(update_gauge1_display)
+        self.chamb_gauge.settings.gauge1_pressure_scaled.add_listener(update_gauge1_display)
         
         def update_gauge2_display():
             pressure_value = self.gauge.settings['ch2_pressure_scaled']

@@ -1,60 +1,51 @@
 {
-	"num_runs": 50,
-	"prior_datasets_dir": "C:\\Users\\lab\\Documents\\ALDBot Data\\Wafer 3f2w robot",
+	"num_runs": 90,
+	"prior_datasets_dir": "C:\\Users\\lab\\Documents\\ALDBot Data\\100 random then Gp campaign",
 	"params": {
-		"process_pressure": 100,
-		"precursor_dose_time": 15,
+		"process_pressure": 30,
+		"precursor_dose_time": 20,
 		"ald_valves_delay": 10,
-		"precursor_purge_time": 500,
+		"precursor_purge_time": 1000,
 		"H2_plasma_flow_rate": 75,
 		"Ar_process_flow_rate": 50,
 		"ALD_purge_flow_rate": 5,
 		"ALD_prep_time": 1000,
-		"ALD_purge_time": 800,
-		"plasma_pressure": 50,
-		"plasma_duration": 2000,
+		"ALD_purge_time": 1000,
+		"plasma_pressure": 30,
+		"plasma_duration": 1500,
 		"N2_plasma_flow_rate": 0,
 		"Ar_plasma_flow_rate": 0,
 		"ALD_purge_plasma_flow_rate": 0,
-		"RF_power_setpoint": 275,
-		"LC_preset": 53,
-		"TC_preset": 33,
-		"plasma_prep_time": 500,
+		"RF_power_setpoint": 250,
+		"LC_preset": 56,
+		"TC_preset": 34,
+		"plasma_prep_time": 1000,
 		"plasma_purge_time": 1500,
 		"Number_of_ALD_cycles": 25
 	},
 	"exploration_params": [
-		"ALD_prep_time",
-		"RF_power_setpoint",
 		"plasma_duration",
 		"plasma_prep_time",
 		"precursor_dose_time",
 		"process_pressure",
-		"ALD_purge_time",
-		"precursor_purge_time"
+		"ALD_purge_time"
 	],
 	"pre_processor": "ald_data_processing.process_ald",
 	"optimizer": "bayesian_optimizer.Get_New_Points_With_GP",
 	"modeled_params": [
-		"ALD_prep_time",
-		"RF_power_setpoint",
 		"plasma_duration",
 		"plasma_prep_time",
 		"precursor_dose_time",
 		"process_pressure",
-		"ALD_purge_time",
-		"precursor_purge_time"
+		"ALD_purge_time"
 	],
 	"model_output_param": "dep_rate_fit",
 	"param_limits": {
-		"ALD_prep_time": [200, 2500],
-		"RF_power_setpoint": [200, 300],
 		"plasma_duration": [800, 2500],
 		"plasma_prep_time": [100, 2500],
 		"precursor_dose_time": [10, 100],
-		"process_pressure": [30, 200],
-		"ALD_purge_time": [50, 2000],
-		"precursor_purge_time": [50, 2000]
+		"process_pressure": [20, 150],
+		"ALD_purge_time": [100, 2000]
 	},
 	"num_RMSE_trials": 1
 }

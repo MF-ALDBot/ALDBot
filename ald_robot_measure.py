@@ -68,13 +68,14 @@ class ALDRobot(Measurement):
                     parameter_space_limits.append(C['param_limits'][param])
                 
                 
-                # GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
-                #                        input_names=C['modeled_params'], 
-                #                        output_name=C['model_output_param'],
-                #                        parameter_space_limits=parameter_space_limits,
-                #                        num_new_points=1,
-                #                        num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
+                GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
+                                       input_names=C['modeled_params'], 
+                                       output_name=C['model_output_param'],
+                                       parameter_space_limits=parameter_space_limits,
+                                       num_new_points=1,
+                                       num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
                 
+                '''
                 GP = gp_results = self.submit_zmq_job_and_wait(
                                        "Get_New_Points_With_GP",
                                        df=self.runs_df.to_dict(), 
@@ -83,6 +84,7 @@ class ALDRobot(Measurement):
                                        parameter_space_limits=parameter_space_limits,
                                        num_new_points=1,
                                        num_RMSE_trials=C['num_RMSE_trials'])
+                '''
                     
                 optimizer_results.append(gp_results)
                 import numpy as np
@@ -136,9 +138,10 @@ class ALDRobot(Measurement):
 
         corrected_params = params.copy()
         # # deal with special cases
-        # corrected_params['precursor_purge_time'] = 0.5*params['total_MO_purge']
-        # corrected_params['ALD_purge_time'] = 0.5*params['total_MO_purge']
-        # del corrected_params['total_MO_purge']
+        corrected_params['precursor_purge_time'] = params['ALD_purge_time']
+        if corrected_params['plasma_duration'] > 2000:
+            corrected_params['LC_preset'] = 58
+            corrected_params['TC_preset'] = 35
         
         # set parameters
         for param_name, val in corrected_params.items():
