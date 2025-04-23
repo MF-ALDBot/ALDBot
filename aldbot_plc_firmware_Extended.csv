@@ -415,6 +415,8 @@ C-000018,"Valve6_plasma_argon_open",false,"0",000007,000007,,,,,,false,false,"0"
 C-000019,"Valve7_ald_pneumatic_purge_open",false,"0",000008,000008,,,,,,false,false,"0",false,,"C",,false
 C-000020,"Valve8_window_purge_open",false,"0",000009,000009,,,,,,false,false,"0",false,,"C",,false
 SBR-001016,"Watchdog Timeout",false,"0",,,,,,,"On if the actual scan time has exceeded the limit set in the project",,,,false,,"SBR",,false
+C-000086,"ald_dose_active",false,"1",,,,,,,,false,false,"0",false,,"C",,false
+C-000085,"ald_t1_start",false,"0",,,,,,,,false,false,"0",false,,"C",,false
 C-000081,"pid_auto",false,"1",,,,,,,,false,false,"0",false,,"C",,false
 C-000080,"pid_enable",false,"1",,,,,,,,false,false,"0",false,,"C",,false
 C-000084,"reset_alarm",false,"0",000012,000012,,,,,,false,false,"0",false,,"C",,false
