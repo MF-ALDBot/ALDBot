@@ -3,6 +3,7 @@ from ScopeFoundry.cb32_uuid import cb32_uuid
 import pandas as pd
 import json
 from bayesian_optimizer import Get_New_Points_With_GP
+from optimizer_ald_model_dep_deviation import Get_New_Points_With_GP_ALD
 from ald_data_processing import process_ald
 import glob
 
@@ -47,7 +48,7 @@ class ALDRobot(Measurement):
         
         # Load prior datasets and preprocess
         # look for prior datasets in directory:
-        for fname in glob.glob(C['prior_datasets_dir']+"/*/*.h5"):
+        for fname in glob.glob(C['prior_datasets_dir']+"/*/*/*.h5"):
             print(fname)
             result = process_ald(fname)
             #append result to dataframe, add column in DF of "prior" True
@@ -68,13 +69,24 @@ class ALDRobot(Measurement):
                     parameter_space_limits.append(C['param_limits'][param])
                 
                 
+                GP = gp_results = Get_New_Points_With_GP_ALD(df=self.runs_df, 
+                                       input_names=C['modeled_params'], 
+                                       output_name=C['model_output_param'],
+                                       parameter_space_limits=parameter_space_limits,
+                                       output_deviation_variable=C['output_deviation_variable'],
+                                       num_new_points=1,
+                                       num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
+                
+                '''
                 GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
                                        parameter_space_limits=parameter_space_limits,
+                                       output_deviation_variable=C['output_deviation_variable'],
                                        num_new_points=1,
                                        num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
                 
+                '''
                 '''
                 GP = gp_results = self.submit_zmq_job_and_wait(
                                        "Get_New_Points_With_GP",
@@ -139,9 +151,11 @@ class ALDRobot(Measurement):
         corrected_params = params.copy()
         # # deal with special cases
         corrected_params['precursor_purge_time'] = params['ALD_purge_time']
+        '''
         if corrected_params['plasma_duration'] > 2000:
             corrected_params['LC_preset'] = 58
             corrected_params['TC_preset'] = 35
+        '''
         
         # set parameters
         for param_name, val in corrected_params.items():

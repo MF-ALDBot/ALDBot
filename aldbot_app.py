@@ -16,6 +16,7 @@ from ald_run_measure import AldRunMeasure
 from ald_gui import ALDBot_UI
 from ald_robot_measure import ALDRobot
 from ald_robot_random_exps import ALDRobotRNG
+from ald_param_sweep_measure import ALDRobotSweep
 
 class ALDBotApp(BaseMicroscopeApp):
     
@@ -42,6 +43,7 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_measurement(ALDBot_UI(self))
         self.add_measurement(ALDRobot(self))
         self.add_measurement(ALDRobotRNG(self))
+        self.add_measurement(ALDRobotSweep(self))
         
         
         self.settings_load_ini("aldbot_defaults.ini")

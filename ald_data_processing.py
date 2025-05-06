@@ -30,7 +30,8 @@ def process_ald(data_file_path):
     x = np.linspace(1, len(thickness_data), len(thickness_data))
     slope, _, r_sq, _, _ = linregress(x[10:], thickness_data[10:])
     dep_rate_fit = slope
-    growth_data_filtered = growth_data[growth_data > 0.1]
+    growth_data_cut = growth_data[9:]
+    growth_data_filtered = growth_data_cut[growth_data_cut > 0.1]
     dep_rate_mean = np.mean(growth_data_filtered)
     dep_rate_deviation = np.std(growth_data_filtered)
     thickness_start = thickness_ellips_data[0]

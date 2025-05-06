@@ -12,18 +12,21 @@ class GPmodel(object):
         # GP Model Components
        
     # Noise Function
+    '''
     def my_noise(self,x,hps):
         my_s = np.ones(len(x))*hps[self.num_of_input_dimensions+1]
         noise = np.diag(my_s)
         return noise
+    '''
 
     # Prior Mean Function
     def my_mean(self,x,hps):
-        mean = np.ones(len(x))*hps[self.num_of_input_dimensions+2]
+        mean = np.ones(len(x))*hps[self.num_of_input_dimensions+1]
         return mean
 
     def __init__(self, df, input_names, output_name,
                                parameter_space_limits,
+                               output_deviation_variable=None,
                                prev_trained_GP_hps=None):
         
         # TODO: Make use of prev_trained_GP_hps
@@ -56,6 +59,10 @@ class GPmodel(object):
         
         self.x_data = np.array(df_normalized[input_variables])
         self.y_data = np.array(df_normalized[output_variable])
+        if output_deviation_variable is None:
+            self.y_var = np.ones_like(self.y_data, dtype=np.float64)*abs(np.mean(self.y_data))/100
+        else: 
+            self.y_var = np.array(df_normalized[output_deviation_variable])**2
     
         ###########################################################################
         ###########################################################################
@@ -68,16 +75,17 @@ class GPmodel(object):
         # Fit the GP Model
     
         # Defining the bounds of hyperparameter optimization
-        self.bounds = bounds = np.empty((num_of_input_dimensions+3,2))
+        self.bounds = bounds = np.empty((num_of_input_dimensions+2,2))
         # Kernel Sq Exp 
-        bounds[0] = np.array([1e-4,10e1])                            
+        y_range_sq = (np.max(self.y_data)-np.min(self.y_data))**2
+        bounds[0] = np.array([1e-7*y_range_sq,y_range_sq])                            
         bounds[1:num_of_input_dimensions+1] = np.array([0.02,1.5])                             
     
         # Noise
-        bounds[num_of_input_dimensions+1] = np.array([1e-6,np.var(self.y_data)])                     
+        #bounds[num_of_input_dimensions+1] = np.array([1e-6,np.var(self.y_data)])                     
     
         # Mean
-        bounds[num_of_input_dimensions+2] = np.array([np.min(self.y_data),np.max(self.y_data)])                             
+        bounds[num_of_input_dimensions+1] = np.array([np.min(self.y_data),np.max(self.y_data)])                             
     
         
         if prev_trained_GP_hps is None:
@@ -90,7 +98,8 @@ class GPmodel(object):
                              #gp_kernel_function=my_kernel, 
                              init_hyperparameters = self.init_hps,
                              gp_mean_function=self.my_mean, 
-                             gp_noise_function=self.my_noise)
+                             #gp_noise_function=self.my_noise
+                             noise_variances = self.y_var)
     
         # previous trained hyperparameters implies that no training is required -- as long as data is the same
         # don't use prev_trained_GP_hps if data has changed!!
@@ -213,7 +222,8 @@ class GPmodel(object):
                                  #gp_kernel_function=my_kernel, 
                                  init_hyperparameters = self.init_hps,
                                  gp_mean_function=self.my_mean, 
-                                 gp_noise_function=self.my_noise)
+                                 #gp_noise_function=self.my_noise
+                                 noise_variances = self.y_var)
     
                 my_gp_for_RMSE.train(hyperparameter_bounds = self.bounds, init_hyperparameters = self.init_hps, method='global', max_iter = 4000)
     
@@ -233,6 +243,7 @@ class GPmodel(object):
 
 def Get_New_Points_With_GP(df, input_names, output_name,
                            parameter_space_limits,
+                           output_deviation_variable,
                            num_new_points =  1,
                            num_RMSE_trials = 0,
                            prev_trained_GP_hps=None):
@@ -243,6 +254,7 @@ def Get_New_Points_With_GP(df, input_names, output_name,
         input_names:         d list of the names of the d input variables
         output_name:         column name of output variable that GP will predict
         parameter_space:     dx2 numpy array that has the limits of the parameter space for all dimensions of length d.
+        output_deviation_variable: column name of output variable variance
         num_new_points:      positive integer specifying the number of new point to find by the Bayesian Optimization
         num_RMSE_trials:     positive integer specifying the number of trials for cross-validation, if 0, cross-validation is skipped
         prev_trained_GP_hps: trained hyperparameters from the previous loop, if not given function assumes first run so information gain will be skipped
@@ -260,7 +272,7 @@ def Get_New_Points_With_GP(df, input_names, output_name,
     df = pd.DataFrame(df)
     import time
     t0 = t00 = time.monotonic()
-    gpmodel = GPmodel(df, input_names, output_name, parameter_space_limits, prev_trained_GP_hps)
+    gpmodel = GPmodel(df, input_names, output_name, parameter_space_limits, output_deviation_variable, prev_trained_GP_hps)
     print(f"GPmodel trained in {time.monotonic() - t0} sec")
     t0 = time.monotonic()
     new_pt_dict = gpmodel.identify_new_points(num_new_points)

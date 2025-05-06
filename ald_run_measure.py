@@ -437,11 +437,11 @@ class AldRunMeasure(Measurement):
                 self.seren_mc2.settings['set_tc_preset_position'] = self.settings['TC_preset'] #plasma_tc_position
                 self.seren_mc2.goto()
                 
-                """
+                
                 #Open window purges
                 print('Opening the window purge valve...')
                 self.plc.settings['Valve8_window_purge_open'] = True
-                """
+                
                 ## MO Prep Phase
                 #Open the ALD purge flow, if closed
                 self.plc.settings['MFC4_ALD_purge_SP_sccm'] = S['ALD_purge_flow_rate']
@@ -517,7 +517,7 @@ class AldRunMeasure(Measurement):
                 
                 
                 #Close window purge
-                self.plc.settings['Valve8_window_purge_open'] = False
+                #self.plc.settings['Valve8_window_purge_open'] = False
                 
                 # set plasma valve mfc config
                 if self.settings['H2_plasma_flow_rate'] > 1:
@@ -721,7 +721,7 @@ class AldRunMeasure(Measurement):
         
         t0 = time.monotonic()
         
-        time.sleep(2)
+        time.sleep(5)
         
         while True:
             current_pressure = self.vat.settings.actual_pressure.read_from_hardware()
@@ -753,14 +753,14 @@ class AldRunMeasure(Measurement):
     
     def perform_safety_checks(self):
         
-        if self.maxigauge.settings.ch1_pressure_scaled.value > 5.0:
+        if self.chamb_gauge.settings.gauge1_pressure_scaled.value > 5.0:
             self.plc.settings['ScopeFoundry_high_pressure_alert'] = 1 # Trigger PLC safe mode
             raise ValueError('Error! Pressure is too high! Closing all valves...')
 
         if self.plc.settings['High_pressure_error']:
             raise ValueError('Error! Pressure is too high on PLC! Closing all valves...')
         
-        if self.maxigauge.settings.ch1_pressure_scaled.value < 1e-4:
+        if self.chamb_gauge.settings.gauge1_pressure_scaled.value < 1e-4:
             raise ValueError('Error! Pressure is too low! Going to the safe state...')
         
     def update_display(self):
