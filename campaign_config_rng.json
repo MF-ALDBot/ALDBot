@@ -1,5 +1,5 @@
 {
-	"num_runs": 20,
+	"num_runs": 5,
 	"params": {
 		"process_pressure": 50,
 		"precursor_dose_time": 15,
@@ -34,7 +34,7 @@
 	"param_limits_and_step": {
 		"plasma_prep_time": [100, 2500, 100],
 		"precursor_dose_time": [10, 100, 10],
-		"process_pressure": [20, 150, 10],
+		"process_pressure": [10, 150, 10],
 		"ALD_purge_time": [100, 2000, 100]
 	}
 }
