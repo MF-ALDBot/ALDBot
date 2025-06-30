@@ -55,9 +55,15 @@ class ALDBotLoggerMeaure(Measurement):
             
             pressure_gauge = self.app.hardware['Pfeiffer_MaxiGauge']
             
-            for ch in ['ch1_pressure', 'ch2_pressure', 'ch3_pressure']:
+            for ch in ['ch2_pressure', 'ch3_pressure']:
                 pressure_gauge.settings.get_lq(ch).read_from_hardware()
                 dat = pressure_gauge.settings.get_lq(ch + "_scaled").value
                 self.gauge_plotdata[ch + "_scaled"].append(dat)
                 
                 time.sleep(0.1)
+                
+            chamber_gauge = self.app.hardware['Pfeiffer_Chamber_Gauge']
+            dat_chamber = chamber_gauge.settings.gauge1_pressure_scaled.read_from_hardware()
+            self.gauge_plotdata['ch1_pressure_scaled'].append(dat_chamber)
+            
+            
