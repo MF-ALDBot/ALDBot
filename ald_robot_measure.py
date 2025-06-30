@@ -68,7 +68,7 @@ class ALDRobot(Measurement):
                 for param in C['modeled_params']:
                     parameter_space_limits.append(C['param_limits'][param])
                 
-                
+                '''
                 GP = gp_results = Get_New_Points_With_GP_ALD(df=self.runs_df, 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
@@ -78,6 +78,7 @@ class ALDRobot(Measurement):
                                        num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
                 
                 '''
+                print(self.runs_df)
                 GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
@@ -86,7 +87,7 @@ class ALDRobot(Measurement):
                                        num_new_points=1,
                                        num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
                 
-                '''
+                
                 '''
                 GP = gp_results = self.submit_zmq_job_and_wait(
                                        "Get_New_Points_With_GP",
