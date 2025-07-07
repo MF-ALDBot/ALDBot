@@ -2,8 +2,8 @@ from ScopeFoundry import Measurement
 from ScopeFoundry.cb32_uuid import cb32_uuid
 import pandas as pd
 import json
-from bayesian_optimizer import Get_New_Points_With_GP
-from optimizer_ald_model_dep_deviation import Get_New_Points_With_GP_ALD
+#from bayesian_optimizer import Get_New_Points_With_GP
+#from optimizer_ald_model_dep_deviation import Get_New_Points_With_GP_ALD
 from ald_data_processing import process_ald
 import glob
 
