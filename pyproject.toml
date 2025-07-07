@@ -1,0 +1,25 @@
+[project]
+name = "aldbot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "gpcam>=7.4.2",
+    "h5py>=3.14.0",
+    "influxdb-client>=1.49.0",
+    "numpy>=2.3.1",
+    "pandas>=2.3.0",
+    "pymodbustcp>=0.3.0",
+    "pyqt6>=6.9.1",
+    "pyqtdarktheme>=2.1.0",
+    "pyqtgraph>=0.13.7",
+    "pyserial>=3.5",
+    "pyyaml>=6.0.2",
+    "qrcode>=8.2",
+    "qtconsole>=5.6.1",
+    "qtpy>=2.4.3",
+    "requests>=2.32.4",
+    "scipy>=1.16.0",
+    "uuid7>=0.1.0",
+]
