@@ -429,7 +429,7 @@ S32-000015,"t1.Preset",true,"10",400001,400002,,,,,,false,false,"0",false,,"S32"
 SSTRUC-000007,"t2",false,,,,,,,,"System Structure for Simple Timer",,,,false,,"SSTRUC","STMR",false
 S32-000026,"t2.Current",false,"0",400033,400034,,,,,,false,false,"0",false,,"S32","STMR",false
 C-000012,"t2.Done",false,"0",000010,000010,,,,,,false,false,"0",false,,"C","STMR",false
-S32-000025,"t2.Preset",true,"1999",400009,400010,,,,,,false,false,"0",false,,"S32","STMR",false
+S32-000025,"t2.Preset",true,"982",400009,400010,,,,,,false,false,"0",false,,"S32","STMR",false
 SSTRUC-000008,"t3",false,,,,,,,,"System Structure for Simple Timer",,,,false,,"SSTRUC","STMR",false
 S32-000032,"t3.Current",false,"0",,,,,,,,false,false,"0",false,,"S32","STMR",false
 C-000015,"t3.Done",false,"0",,,,,,,,false,false,"0",false,,"C","STMR",false
