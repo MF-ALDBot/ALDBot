@@ -18,7 +18,7 @@ class AldRunMeasure(Measurement):
         
         # MO Step Parameters
         self.settings.New('process_pressure', dtype = int, unit  = 'mTorr', initial = 30, vmin = 0, vmax = 1500)
-        self.settings.New('precursor_dose_time', dtype = int, unit = 'ms', initial = 10, vmin = 0, vmax = 250)
+        self.settings.New('precursor_dose_time', dtype = int, unit = 'ms', initial = 10, vmin = 10, vmax = 5000)
         self.settings.New('ald_valves_delay', dtype = int, unit = 'ms', initial = 10)
         self.settings.New('precursor_purge_time', dtype = int, unit = 'ms', initial = 1000)
         self.settings.New('H2_plasma_flow_rate', dtype = int, unit = 'sccm', initial = 0, vmin = 0, vmax = 100)
@@ -471,14 +471,19 @@ class AldRunMeasure(Measurement):
                 self.plc.settings['start_ALD_Valve1_dose'] = True
                 
                 def read_ald_dose_state():
-                    result =  self.plc.modbus_client.read_coils(self.plc.tag_db['start_ALD_Valve1_dose']['modbus_start'])
+                    """
+                    Quick hack to read PLC state rapidly, note must use threading lock and use "mb0" for modbus address (not modbus_start)!
+                    """
+                    with self.plc.lock:
+                        result =  self.plc.modbus_client.read_coils(self.plc.tag_db['start_ALD_Valve1_dose']['mb0'])
+                    #print(f"read_ald_dose_state: {result}, {self.plc.settings['start_ALD_Valve1_dose']}")
                     if result is not None and isinstance(result, list) and len(result) > 0:
                         return result[0]
-                    return None
+                    else:
+                        return None
                 
-                #while self.plc.settings['start_ALD_Valve1_dose']:
                 dose_state = True
-                while dose_state:                    
+                while dose_state:    
                     dose_state = read_ald_dose_state()
                     if dose_state is None:
                         print("Warning: Failed to read ALD dose state, retrying...")
