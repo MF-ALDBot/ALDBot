@@ -620,7 +620,7 @@ class AldRunMeasure(Measurement):
                 #self.filmsense.single_measurement_collect()
                 #time.sleep(1.5)
                 params = self.filmsense.get_params()
-                thickness_value = round(params["Thick(nm).2"],2)
+                thickness_value = round(params["Thick(nm).2"],4)
                 self.thickness_data.append(thickness_value)
                 self.cycles.append(cycle_number)
                 if len(self.thickness_data)>2:
