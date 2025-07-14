@@ -3,10 +3,17 @@ from ScopeFoundry.cb32_uuid import cb32_uuid
 import pandas as pd
 import json
 #from bayesian_optimizer import Get_New_Points_With_GP
+#from models.get_new_points_with_gp import Get_New_Points_With_GP
 #from optimizer_ald_model_dep_deviation import Get_New_Points_With_GP_ALD
-from ald_data_processing import process_ald
+#from ald_data_processing import process_ald
 import glob
 
+import importlib
+def load_from_module_path(path):
+    m,c = path.split(":")
+    mod = importlib.import_module(m)
+    C = getattr(mod, c)
+    return mod, C
 
 class ALDRobot(Measurement):
     
@@ -39,6 +46,9 @@ class ALDRobot(Measurement):
         #
         
         # create data object
+        
+        # load processing function:
+        _, process_ald = load_from_module_path(C['pre_processor'])
         
 
         # TODO use self.runs_df for live access to table
@@ -79,7 +89,14 @@ class ALDRobot(Measurement):
                 
                 '''
                 print(self.runs_df)
-                GP = gp_results = Get_New_Points_With_GP(df=self.runs_df, 
+                
+                
+
+                    
+                _, Get_New_Points_With_GP = load_from_module_path(C['optimizer'])
+                
+                GP = gp_results = Get_New_Points_With_GP(gp_model_path=C['gp_model'],
+                                       df=self.runs_df, 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
                                        parameter_space_limits=parameter_space_limits,

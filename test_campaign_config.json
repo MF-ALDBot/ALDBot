@@ -30,8 +30,9 @@
 		"process_pressure",
 		"ALD_purge_time"
 	],
-	"pre_processor": "ald_data_processing.process_ald",
-	"optimizer": "bayesian_optimizer.Get_New_Points_With_GP",
+	"pre_processor": "ald_data_processing:process_ald",
+	"optimizer": "models.get_new_points_with_gp:Get_New_Points_With_GP",
+	"gp_model": "models.gpmodel_constant_PriorMean:GPModelConstMean",
 	"modeled_params": [
 		"plasma_prep_time",
 		"precursor_dose_time",
@@ -46,5 +47,6 @@
 		"process_pressure": [10, 150],
 		"ALD_purge_time": [100, 2000]
 	},
-	"num_RMSE_trials": 1
+	"num_RMSE_trials": 1,
+	
 }
