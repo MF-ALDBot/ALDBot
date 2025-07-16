@@ -17,6 +17,7 @@ from ald_gui import ALDBot_UI
 from ald_robot_measure import ALDRobot
 from ald_robot_random_exps import ALDRobotRNG
 from ald_param_sweep_measure import ALDRobotSweep
+from ScopeFoundryHW.pico_tc08 import pico_tc08_hw
 
 class ALDBotApp(BaseMicroscopeApp):
     
@@ -34,6 +35,7 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_hardware(InfluxDB_LQ_StreamerHW(self))
         self.add_hardware(Filmsense_Ellipsometer_HW(self, name='filmsense_ellipsometer'))        
         spec_hw = self.add_hardware(OceanOpticsSpectrometerODirectHW(self))
+        
         self.add_measurement(OOSpecLive(self))
         
         self.add_hardware(MFCrucibleHW(self))
@@ -44,6 +46,10 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_measurement(ALDRobot(self))
         self.add_measurement(ALDRobotRNG(self))
         self.add_measurement(ALDRobotSweep(self))
+        
+        self.add_hardware(pico_tc08_hw.PicoTC08_HW(self, 
+            chan_names=["_", "_", "_", "precursor1_backup", "precursor1", "_", "_", "_"]))#"012_____8"))
+
         
         
         self.settings_load_ini("aldbot_defaults.ini")
