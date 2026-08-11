@@ -27,64 +27,65 @@ class ALDRobotSweep(Measurement):
         # Initialize data object
         self.runs_df = pd.DataFrame()
 
-        try:
-            sweep_param = config['sweep_param'][0]
-            param_limits = config['param_limits'][sweep_param]
-            num_points = config['num_points']
+        for sweep_param_index in range(len(config['sweep_param'])):
+            try:
+                sweep_param = config['sweep_param'][sweep_param_index]
+                param_limits = config['param_limits'][sweep_param]
+                num_points = config['num_points']
             
-            sweep_values = np.linspace(param_limits[0], param_limits[1], num_points)
-            
-            # Reorder the sweep values to start from the middle and go outward
-            middle_index = num_points // 2
-            reordered_indices = []
+                sweep_values = np.linspace(param_limits[0], param_limits[1], num_points)
+
+                # Reorder the sweep values to start from the middle and go outward
+                middle_index = num_points // 2
+                reordered_indices = []
         
-            # If num_points is odd, start with the exact middle
-            if num_points % 2 == 1:
-                reordered_indices.append(middle_index)
-                left = middle_index - 1
-                right = middle_index + 1
-            else:
-                # If num_points is even, start with the two middle points
-                left = middle_index - 1
-                right = middle_index
-            
-            # Alternate between left and right sides until all points are covered
-            while left >= 0 or right < num_points:
-                if left >= 0:
-                    reordered_indices.append(left)
-                    left -= 1
-                if right < num_points:
-                    reordered_indices.append(right)
-                    right += 1
-            
-            # Create the reordered sweep values
-            reordered_sweep_values = [sweep_values[i] for i in reordered_indices]
-            
-            for i, value in enumerate(reordered_sweep_values):
-                print(f"ald_robot run {i+1} of {num_points}. Runs DF: {len(self.runs_df)} rows", "="*30)
-                if self.interrupt_measurement_called:
-                    break
+                # If num_points is odd, start with the exact middle
+                if num_points % 2 == 1:
+                    reordered_indices.append(middle_index)
+                    left = middle_index - 1
+                    right = middle_index + 1
+                else:
+                    # If num_points is even, start with the two middle points
+                    left = middle_index - 1
+                    right = middle_index
                 
-                all_params = config['params'].copy()
-                all_params[sweep_param] = value
-
-                new_dataset_fname = self.ald_run(all_params)
+                # Alternate between left and right sides until all points are covered
+                while left >= 0 or right < num_points:
+                    if left >= 0:
+                        reordered_indices.append(left)
+                        left -= 1
+                    if right < num_points:
+                        reordered_indices.append(right)
+                        right += 1
                 
-                result = process_ald(new_dataset_fname)
-                result['prior'] = False
-                self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
-        finally:
-            CI = self.campaign_info = {}
-            CI['config'] = config
-            CI['runs'] = self.runs_df.to_dict(orient='dict')
-            with open(f"{campaign_mfid}_aldbot_campaign_output.json", 'w') as fp:
-                class NumpyArrayEncoder(json.JSONEncoder):
-                    def default(self, obj):
-                        if isinstance(obj, np.ndarray):
-                            return obj.tolist()
-                        return json.JSONEncoder.default(self, obj)
-
-                json.dump(CI, fp, cls=NumpyArrayEncoder, indent=2)
+                # Create the reordered sweep values
+                reordered_sweep_values = [sweep_values[i] for i in reordered_indices]
+            
+                for i, value in enumerate(reordered_sweep_values):
+                    print(f"ald_robot run {i+1} of {num_points}. Runs DF: {len(self.runs_df)} rows", "="*30)
+                    if self.interrupt_measurement_called:
+                        break
+                    
+                    all_params = config['params'].copy()
+                    all_params[sweep_param] = value
+                    
+                    new_dataset_fname = self.ald_run(all_params)
+                    
+                    result = process_ald(new_dataset_fname)
+                    result['prior'] = False
+                    self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
+            finally:
+                CI = self.campaign_info = {}
+                CI['config'] = config
+                CI['runs'] = self.runs_df.to_dict(orient='dict')
+                with open(f"{campaign_mfid}_aldbot_campaign_output_{sweep_param}.json", 'w') as fp:
+                    class NumpyArrayEncoder(json.JSONEncoder):
+                        def default(self, obj):
+                            if isinstance(obj, np.ndarray):
+                                return obj.tolist()
+                            return json.JSONEncoder.default(self, obj)
+    
+                    json.dump(CI, fp, cls=NumpyArrayEncoder, indent=2)
 
     def ald_run(self, params):
         """blocking run of ald_run measurement with new parameters
@@ -102,7 +103,7 @@ class ALDRobotSweep(Measurement):
         # set parameters
         for param_name, val in corrected_params.items():
             ald_runM.settings[param_name] = val
-
+        
         # run experiment
         self.run_measurement_and_wait(ald_runM)
         

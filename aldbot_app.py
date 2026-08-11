@@ -16,6 +16,7 @@ from ald_run_measure import AldRunMeasure
 from ald_gui import ALDBot_UI
 from ald_robot_measure import ALDRobot
 from ald_robot_random_exps import ALDRobotRNG
+from ald_robot_fixedParams_exps import ALDRobotFIX
 from ald_param_sweep_measure import ALDRobotSweep
 from ScopeFoundryHW.pico_tc08 import pico_tc08_hw
 
@@ -45,11 +46,14 @@ class ALDBotApp(BaseMicroscopeApp):
         self.add_measurement(ALDBot_UI(self))
         self.add_measurement(ALDRobot(self))
         self.add_measurement(ALDRobotRNG(self))
+        self.add_measurement(ALDRobotFIX(self))
         self.add_measurement(ALDRobotSweep(self))
         
         self.add_hardware(pico_tc08_hw.PicoTC08_HW(self, 
-            chan_names=["_", "_", "_", "precursor1_backup", "precursor1", "_", "_", "_"]))#"012_____8"))
-
+            chan_names=["_", "_",
+                        "_", "precursor1_backup",
+                        "precursor1", "_", "_", "_"]))#"012_____8"))
+        
         
         
         self.settings_load_ini("aldbot_defaults.ini")

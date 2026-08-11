@@ -1,3 +1,4 @@
+import numpy as np
 from ScopeFoundry import Measurement
 from ScopeFoundry.cb32_uuid import cb32_uuid
 import pandas as pd
@@ -57,10 +58,13 @@ class ALDRobot(Measurement):
         
         
         # Load prior datasets and preprocess
-        # look for prior datasets in directory:
-        for fname in glob.glob(C['prior_datasets_dir']+"/*/*/*.h5"):
+        # look for prior datasets in directory (need to take care of initial rng case!!!!!!!!!!:
+        
+        # for fname in glob.glob(C['prior_datasets_dir']+"/*/*/*.h5"):
+        for fname in glob.glob(C['prior_datasets_dir']+"/*/*.h5"):
             print(fname)
             result = process_ald(fname)
+            
             #append result to dataframe, add column in DF of "prior" True
             result['is_prior'] = [True]
             self.runs_df = pd.concat([self.runs_df, result], ignore_index=True)   
@@ -68,56 +72,37 @@ class ALDRobot(Measurement):
         optimizer_results = []
         
         try:
-            print(C['num_runs'])
+            print('Number of runs: ', C['num_runs'])
             for i in range(C['num_runs']):
-                print(f"ald_robot run {i} of {C['num_runs']}. Runs DF: {len(self.runs_df)} rows", "="*30)
+                print(f"ald_robot run {i+1} of {C['num_runs']}. Runs DF: {len(self.runs_df)} rows", "="*30)
                 if self.interrupt_measurement_called:
                     break
                 
+                ######## Why this is in the for loop?  #############
                 parameter_space_limits = []
                 for param in C['modeled_params']:
                     parameter_space_limits.append(C['param_limits'][param])
                 
-                '''
-                GP = gp_results = Get_New_Points_With_GP_ALD(df=self.runs_df, 
-                                       input_names=C['modeled_params'], 
-                                       output_name=C['model_output_param'],
-                                       parameter_space_limits=parameter_space_limits,
-                                       output_deviation_variable=C['output_deviation_variable'],
-                                       num_new_points=1,
-                                       num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
                 
-                '''
-                print(self.runs_df)
+                #print(self.runs_df)
                 
                 
 
                     
-                _, Get_New_Points_With_GP = load_from_module_path(C['optimizer'])
+                _, optimizer_func = load_from_module_path(C['optimizer'])
                 
-                GP = gp_results = Get_New_Points_With_GP(gp_model_path=C['gp_model'],
+                GP = gp_results = optimizer_func(gp_model_path=C['gp_model'],
                                        df=self.runs_df, 
                                        input_names=C['modeled_params'], 
                                        output_name=C['model_output_param'],
                                        parameter_space_limits=parameter_space_limits,
                                        output_deviation_variable=C['output_deviation_variable'],
                                        num_new_points=1,
-                                       num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps)
+                                       num_RMSE_trials=C['num_RMSE_trials'])#, prev_trained_GP_hps) Not needed for initial rng exp?!
                 
                 
-                '''
-                GP = gp_results = self.submit_zmq_job_and_wait(
-                                       "Get_New_Points_With_GP",
-                                       df=self.runs_df.to_dict(), 
-                                       input_names=C['modeled_params'], 
-                                       output_name=C['model_output_param'],
-                                       parameter_space_limits=parameter_space_limits,
-                                       num_new_points=1,
-                                       num_RMSE_trials=C['num_RMSE_trials'])
-                '''
                     
                 optimizer_results.append(gp_results)
-                import numpy as np
                 new_point_dict = {name:np.array(GP['new_points'])[0,:][i] for i,name in enumerate(C['modeled_params'])}
 
                 def subset_dict(original_dict, keys):
@@ -140,8 +125,8 @@ class ALDRobot(Measurement):
             CI['config'] = config
             CI['runs'] = self.runs_df.to_dict(orient='dict')
             CI['optimizer'] = optimizer_results
+            
             with open(f"{campaign_mfid}_aldbot_campaign_output.json", 'w') as fp:
-                import numpy as np
                 class NumpyArrayEncoder(json.JSONEncoder):
                     def default(self, obj):
                         if isinstance(obj, np.ndarray):
@@ -164,6 +149,9 @@ class ALDRobot(Measurement):
         ald_runM = self.app.measurements['ald_run']
         
         # make sure ald_run is not currently running
+        import time
+        if not ('stop' in ald_runM.settings['run_state'] ):
+            time.sleep(5.0) # was 1.0 s; changed after we got assertion errors from here on 08/07
         assert 'stop' in ald_runM.settings['run_state'] 
 
         corrected_params = params.copy()
@@ -188,7 +176,8 @@ class ALDRobot(Measurement):
             print("Interrupting!")
             self.interrupt_measurement_called = True
         '''
-        
+        print('here - sleep now for 5 s')
+        time.sleep(5.0) # added temporarily on 04/03 by Tim for C28
         # return filename of new dataset
         return ald_runM.h5_filename
     

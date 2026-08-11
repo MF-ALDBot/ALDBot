@@ -21,7 +21,8 @@ def process_ald(data_file_path):
     filepath_txt = folder_path + '/' + sample_name + '.txt'
 
     # Import the data from a .txt file
-    ellips_data = pd.read_csv(filepath_txt, sep='\s+', skiprows=10) 
+    # ellips_data = pd.read_csv(filepath_txt, sep='\s+', skiprows=10) \s+ seems to be invalid, trying tab-sep instead
+    ellips_data = pd.read_csv(filepath_txt, sep='\t', skiprows=10)
     thickness_ellips_data = ellips_data["Thick(nm).2"].to_numpy()
     fit_diff_data = ellips_data["Fit_Diff"].to_numpy()
 
@@ -29,11 +30,13 @@ def process_ald(data_file_path):
 
     x = np.linspace(1, len(thickness_data), len(thickness_data))
     slope, _, r_sq, _, _ = linregress(x[10:], thickness_data[10:])
-    dep_rate_fit = slope
     growth_data_cut = growth_data[9:]
-    growth_data_filtered = growth_data_cut[growth_data_cut > 0.1]
-    dep_rate_mean = np.mean(growth_data_filtered)
-    dep_rate_deviation = np.std(growth_data_filtered)
+    growth_data_filtered = growth_data_cut[growth_data_cut > 0.001] # changed from > 0.1 for Al2O3
+    dep_rate_fit = slope if growth_data_filtered.size > 0 else 0  # preventing negative growth rates
+    #dep_rate_mean = np.mean(growth_data_filtered)
+    #dep_rate_deviation = np.std(growth_data_filtered)
+    dep_rate_mean = np.mean(growth_data_filtered) if growth_data_filtered.size > 0 else 0
+    dep_rate_deviation = np.std(growth_data_filtered) if growth_data_filtered.size > 2 else 1e-6
     thickness_start = thickness_ellips_data[0]
     thickness_end = thickness_ellips_data[-1]
     gpc_easy = (thickness_end - thickness_start)/cycle_count

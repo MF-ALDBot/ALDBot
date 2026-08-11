@@ -18,7 +18,7 @@ class AldRunMeasure(Measurement):
         
         # MO Step Parameters
         self.settings.New('process_pressure', dtype = int, unit  = 'mTorr', initial = 30, vmin = 0, vmax = 1500)
-        self.settings.New('precursor_dose_time', dtype = int, unit = 'ms', initial = 10, vmin = 10, vmax = 5000)
+        self.settings.New('precursor_dose_time', dtype = int, unit = 'ms', initial = 10, vmin = 10, vmax = 10000)
         self.settings.New('ald_valves_delay', dtype = int, unit = 'ms', initial = 10)
         self.settings.New('precursor_purge_time', dtype = int, unit = 'ms', initial = 1000)
         self.settings.New('H2_plasma_flow_rate', dtype = int, unit = 'sccm', initial = 0, vmin = 0, vmax = 100)
@@ -92,7 +92,7 @@ class AldRunMeasure(Measurement):
             ui.precursor_dose_doubleSpinBox)
         
         self.settings.precursor_purge_time.connect_to_widget(
-            ui.ald_purge_time_doubleSpinBox)
+            ui.mo_purge_time_doubleSpinBox)
         
         self.settings.ald_valves_delay.connect_to_widget(
             ui.ald_delay_doubleSpinBox)
@@ -119,7 +119,7 @@ class AldRunMeasure(Measurement):
             ui.mo_prep_time_doubleSpinBox)
         
         self.settings.ALD_purge_time.connect_to_widget(
-            ui.mo_purge_time_doubleSpinBox)
+            ui.ald_purge_time_doubleSpinBox)
         
         self.settings.ALD_purge_plasma_flow_rate.connect_to_widget(
             ui.ald_purge_plasma_mfc_doubleSpinBox)
@@ -669,7 +669,7 @@ class AldRunMeasure(Measurement):
             self.filmsense.stop_dynamic_measurement()
             #Purge all the lines
             t0 = time.monotonic()
-            while (time.monotonic() - t0) < 100: ##CHANGE BACK TO 120??
+            while (time.monotonic() - t0) < 30: ##CHANGE BACK TO 120??
                 if self.interrupt_measurement_called:
                     break
                 time.sleep(1)            
@@ -763,7 +763,7 @@ class AldRunMeasure(Measurement):
             raise ValueError('Error! Pressure is too high! Closing all valves...')
 
         if self.plc.settings['High_pressure_error']:
-            raise ValueError('Error! Pressure is too high on PLC! Closing all valves...')
+            raise ValueError('Error! Pressure is too high on PLC! Closing all valves... High_pressure_error')
         
         if self.chamb_gauge.settings.gauge1_pressure_scaled.value < 1e-4:
             raise ValueError('Error! Pressure is too low! Going to the safe state...')

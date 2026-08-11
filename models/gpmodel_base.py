@@ -27,7 +27,7 @@ class GPModelBase(object):
         # Define general variables
         self.input_names = input_names
         self.output_name = output_name
-
+        
         self.df = df
         self.train_method = train_method
         self.train_max_iter = train_max_iter
@@ -88,7 +88,7 @@ class GPModelBase(object):
         # Kernel 3/2 Matern
         y_range_sq = (np.max(self.y_data)-np.min(self.y_data))**2
         bounds[0] = np.array([1e-7*y_range_sq,y_range_sq])   # signal variance      #np.array([1e-7,1])       # 
-        bounds[1:Nk] = np.array([0.1,1.5])   # kernel length for all input dimensions
+        bounds[1:Nk] = np.array([0.3,1.5])   # kernel length for all input dimensions
        
         # Noise
         if output_deviation_variable is None:
@@ -108,7 +108,7 @@ class GPModelBase(object):
         else: 
             self.gp_noise_function = None
             self.y_var = np.array(df_normalized[output_deviation_variable])**2
-
+        
         self.my_gpo = self.create_gpmodel(self.x_data, self.y_data)
         
         if train_gp_model: # Make it false when you need to calculate the rmse only
@@ -119,26 +119,31 @@ class GPModelBase(object):
                 self.train_model(self.my_gpo)
                 print("GP Training Complete!")
                 
-        self.current_trained_hps = self.my_gpo.get_hyperparameters
+        self.current_trained_hps = self.my_gpo.get_hyperparameters()
 
     def create_gpmodel(self, x,y):
-        return GPOptimizer(x,y,
-                             #gp_kernel_function=my_kernel, 
-                             init_hyperparameters = self.init_hps,
-                             prior_mean_function=self.my_mean, 
-                             noise_function=self.gp_noise_function,
-                             noise_variances = self.y_var,
-                             )
+        return GPOptimizer(x_data = x,
+                               y_data = y,
+                               #gp_kernel_function=my_kernel, 
+                               init_hyperparameters = self.init_hps,
+                               prior_mean_function=self.my_mean, 
+                               noise_function=self.gp_noise_function,
+                               noise_variances = self.y_var,
+                               )
 
     def train_model(self, gpmodel):
         gpmodel.train(hyperparameter_bounds = self.bounds, 
                       init_hyperparameters = self.init_hps, 
-                      method=self.train_method  , max_iter = self.train_max_iter)
+                      method=self.train_method,  
+                      max_iter = self.train_max_iter)
         return gpmodel
 
     def identify_new_points(self, num_new_points = 1):
-            
+        
+        
         # Run Bayesian Optimization to identify new point
+        
+        # returns new_points -- ndarray of shape Num_new_points x Nd
         
         # Specifying the domain of search for the Bayesian Optimization. 
         # If you don't want to search in any of the input dimensions, restrict the domain to be [0,0] or any other normalized point of interest
@@ -155,7 +160,7 @@ class GPModelBase(object):
         new_points = self.scaler.inverse_transform(new_point_normalized)
     
         # Get the predicted output and uncertainty for the new point
-        new_predicted_output = self.my_gpo.posterior_mean(new_point_normalized)["f(x)"]
+        new_predicted_output = self.my_gpo.posterior_mean(new_point_normalized)["m(x)"]
         new_predicted_uncertainty  = self.my_gpo.posterior_covariance(new_point_normalized,add_noise = True)["v(x)"]
     
         print('New Point Identified!')

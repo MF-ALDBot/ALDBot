@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "gpcam>=7.4.2",
+    "gpcam>=8.0.0",
     "h5py>=3.14.0",
     "influxdb-client>=1.49.0",
     "numpy>=2.3.1",
@@ -22,4 +22,7 @@ dependencies = [
     "requests>=2.32.4",
     "scipy>=1.16.0",
     "uuid7>=0.1.0",
+    "scikit-learn>=1.6.1",
+    "pillow>=11.3.0",
+    "matplotlib>=3.10.3",
 ]
