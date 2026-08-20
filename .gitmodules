@@ -1,0 +1,3 @@
+[submodule "ScopeFoundry"]
+	path = ScopeFoundry
+	url = https://github.com/ScopeFoundry/ScopeFoundry.git
