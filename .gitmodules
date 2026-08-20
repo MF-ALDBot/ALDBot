@@ -1,3 +1,30 @@
 [submodule "ScopeFoundry"]
 	path = ScopeFoundry
 	url = https://github.com/ScopeFoundry/ScopeFoundry.git
+[submodule "ScopeFoundryHW/pfeiffer_vgc"]
+	path = ScopeFoundryHW/pfeiffer_vgc
+	url = https://github.com/ScopeFoundry/HW_pfeiffer_vgc.git
+[submodule "ScopeFoundryHW/data_streamer"]
+	path = ScopeFoundryHW/data_streamer
+	url = https://github.com/ScopeFoundry/HW_data_streamer.git
+[submodule "ScopeFoundryHW/seren_rf"]
+	path = ScopeFoundryHW/seren_rf
+	url = https://github.com/ScopeFoundry/HW_seren_rf.git
+[submodule "ScopeFoundryHW/vat_throttle"]
+	path = ScopeFoundryHW/vat_throttle
+	url = https://github.com/ScopeFoundry/HW_vat_throttle.git
+[submodule "ScopeFoundryHW/filmsense_ellipsometer"]
+	path = ScopeFoundryHW/filmsense_ellipsometer
+	url = https://github.com/ScopeFoundry/HW_filmsense_ellipsometer.git
+[submodule "ScopeFoundryHW/productivity_plc"]
+	path = ScopeFoundryHW/productivity_plc
+	url = https://github.com/ScopeFoundry/HW_productivity_plc.git
+[submodule "ScopeFoundryHW/pico_tc08"]
+	path = ScopeFoundryHW/pico_tc08
+	url = https://github.com/ScopeFoundry/HW_pico_tc08.git
+[submodule "ScopeFoundryHW/oceanoptics_spec"]
+	path = ScopeFoundryHW/oceanoptics_spec
+	url = https://github.com/ScopeFoundry/HW_oceanoptics_spec.git
+[submodule "ScopeFoundryHW/mf_crucible"]
+	path = ScopeFoundryHW/mf_crucible
+	url = https://github.com/ScopeFoundry/HW_mf_crucible.git
