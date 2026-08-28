@@ -107,7 +107,7 @@ cd ALDBot
 # If already cloned without submodules:
 git submodule update --init --recursive
 
-# Install dependencies
+# Install dependencies 
 uv sync
 ```
 
